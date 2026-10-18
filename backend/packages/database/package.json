@@ -1,0 +1,43 @@
+{
+  "name": "@operix/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "prisma"],
+  "scripts": {
+    "generate": "prisma generate",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:status": "prisma migrate status",
+    "reset": "prisma migrate reset --force",
+    "seed": "tsx prisma/seed/index.ts",
+    "studio": "prisma studio",
+    "format": "prisma format",
+    "clean": "rimraf dist"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed/index.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.2.1"
+  },
+  "devDependencies": {
+    "@operix/permissions": "workspace:*",
+    "@operix/types": "workspace:*",
+    "argon2": "^0.41.1",
+    "prisma": "^6.2.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

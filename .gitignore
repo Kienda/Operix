@@ -1,0 +1,57 @@
+node_modules/
+.npm-cache/
+dist/
+build/
+coverage/
+.turbo/
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+!.env.example
+
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+.DS_Store
+Thumbs.db
+
+packages/database/generated/
+storage/
+tmp/
+.tmp-build/
+uploads/
+.agents
+design
+# Local package cache
+.pnpm-store/
+
+# Temporary workspace
+.tmp-workspace-api/
+
+# Testing artifacts
+test-results/
+playwright-report/
+blob-report/
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Database dumps and backups
+*.sql.gz
+*.dump
+*.backup
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE settings
+.vscode/
+.idea/
