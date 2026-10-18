@@ -16,7 +16,7 @@ beforeAll(async () => {
       branchId: w.HQ,
       data: {
         customerId: w.r.customerA,
-        kind: 'software',
+        serviceType: 'software',
         projectManagerUserId: pm.userId,
         memberUserIds: [w.a.employee.userId],
       },
@@ -25,7 +25,7 @@ beforeAll(async () => {
   unassignedProject = (
     await rec(w.a.owner, 'projects', 'Signage Installation — Northwind', {
       branchId: w.HQ,
-      data: { customerId: w.r.customerA, kind: 'installation' },
+      data: { customerId: w.r.customerA, serviceType: 'installation' },
     })
   ).id;
   taskA = (

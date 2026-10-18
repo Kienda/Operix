@@ -96,7 +96,7 @@ describe.sequential(
         data: {
           customerId: s.customer,
           quotationId: s.quote,
-          kind: 'software',
+          serviceType: 'software',
           contractRequirement: 'before_work_starts',
           projectManagerUserId: w.a.projectManager.userId,
         },
@@ -117,7 +117,7 @@ describe.sequential(
         branchId: w.HQ,
         data: {
           customerId: s.customer,
-          kind: 'software',
+          serviceType: 'software',
           contractRequirement: 'before_work_starts',
           projectManagerUserId: w.a.projectManager.userId,
         },
@@ -242,7 +242,7 @@ describe.sequential(
           branchId: w.HQ,
           data: {
             customerId: w.r.customerA,
-            kind: 'marketing',
+            serviceType: 'marketing',
             projectManagerUserId: w.a.projectManager.userId,
           },
         })

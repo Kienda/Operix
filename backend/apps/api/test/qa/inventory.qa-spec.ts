@@ -47,7 +47,7 @@ beforeAll(async () => {
   printingProject = (
     await rec(w.a.owner, 'projects', 'Printing Project — Kaloum Retail', {
       branchId: w.GN,
-      data: { customerId: w.r.customerB, kind: 'printing' },
+      data: { customerId: w.r.customerB, serviceType: 'printing' },
     })
   ).id;
 });

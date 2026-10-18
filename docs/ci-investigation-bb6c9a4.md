@@ -82,7 +82,38 @@ solely to obtain a green check. Lint still executes zero tasks and is not meanin
 Linux image build/smoke/scan and the new GitHub run must be assessed separately from the old failed run.
 No green-pipeline or production-readiness claim follows from the passing local subset above.
 
-## Dependabot PR review
+## GitHub rerun evidence
+
+[Run 39093185247](https://github.com/Kienda/Operix/actions/runs/39093185247)
+tested repair commit `375dcab` on the isolated repair branch:
+
+- **security passed**, including the backend migration-tool dependency audit.
+- **verify failed only Full authorization and workflow QA**. Unit, P0, pilot, browser,
+  type/build, formatting and deployment-contract/shell checks passed.
+- **images built all four images and passed the actual Linux deployment smoke test**,
+  then failed the unchanged HIGH/CRITICAL vulnerability gate.
+- **publish and staging were skipped**. Explicit job holds remain in place.
+
+Trivy reported API and worker images with **47 high, 0 critical each**, migration with
+**71 high, 1 critical**, and web with **0 high, 0 critical**. These are package findings,
+not deduplicated CVE counts. The migration critical finding is `CVE-2025-68121` in
+Go stdlib 1.23.12 embedded in `@esbuild/linux-x64@0.25.12/bin/esbuild`. OS libraries
+and globally bundled npm dependencies also remain flagged; a clean application
+lockfile audit does not cover these. No scanner ignores or reduced thresholds were added.
+
+The follow-up fixture correction uses supported project `serviceType` fields and
+creates portal quotations through the protected quotation command rather than generic
+record writes. All existing permission/workflow assertions remain. Missing business
+endpoints and lifecycle failures remain release blockers, alongside the image findings.
+The follow-up local QA run executes every case: **116 passed, 32 failed, zero skipped**
+across all 148 cases. The earlier 26 setup-related skips are now exercised rather than hidden.
+
+All five Dependabot PR runs were inspected and shared the original failing checks;
+their failed pipelines do not establish upgrade compatibility. No PR was merged or approved.
+The repair is **not ready for staging staff access or production**. AWS infrastructure,
+Tontin, DNS and live configuration were not changed.
+
+## Dependabot recommendations
 
 Reviewed the exact open PR patches against their official upstream release information:
 

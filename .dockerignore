@@ -20,6 +20,7 @@
 **/*.key
 tmp
 e2e/report
+backend/apps/api/test
 e2e/.dist
 e2e/.state.json
 test-results
