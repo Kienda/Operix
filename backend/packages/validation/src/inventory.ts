@@ -340,9 +340,7 @@ export const assetSchema = z.object({
   maintenanceIntervalDays: z.coerce.number().int().min(0).max(3650).nullish(),
   lastMaintenanceAt: z.coerce.date().nullish(),
   compatibleItemIds: z.array(uuid).max(100).default([]),
-  status: z
-    .enum(['active', 'in_maintenance', 'broken', 'retired', 'disposed'])
-    .default('active'),
+  status: z.enum(['active', 'in_maintenance', 'broken', 'retired', 'disposed']).default('active'),
   notes: longText.optional(),
   tags: tagsSchema,
 });

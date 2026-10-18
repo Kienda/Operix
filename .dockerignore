@@ -1,5 +1,7 @@
 **/node_modules
 **/dist
+**/.tmp-build
+**/coverage
 **/.turbo*
 **/*.tsbuildinfo
 .git

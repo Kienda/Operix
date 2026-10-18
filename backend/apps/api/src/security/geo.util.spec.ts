@@ -3,7 +3,7 @@ import { haversineDistanceMeters, isWithinGeofence } from './geo.util';
 
 describe('haversineDistanceMeters', () => {
   it('returns ~0 for the same point', () => {
-    const point = { latitude: 9.5370, longitude: -13.6785 };
+    const point = { latitude: 9.537, longitude: -13.6785 };
     expect(haversineDistanceMeters(point, point)).toBeLessThan(0.001);
   });
 
@@ -18,7 +18,7 @@ describe('haversineDistanceMeters', () => {
 });
 
 describe('isWithinGeofence', () => {
-  const office = { latitude: 9.5370, longitude: -13.6785 };
+  const office = { latitude: 9.537, longitude: -13.6785 };
 
   it('accepts a point inside the radius', () => {
     const nearby = { latitude: 9.5371, longitude: -13.6785 };
@@ -32,6 +32,8 @@ describe('isWithinGeofence', () => {
 
   it('treats the boundary as inside', () => {
     const distance = haversineDistanceMeters(office, { latitude: 9.538, longitude: -13.6785 });
-    expect(isWithinGeofence({ latitude: 9.538, longitude: -13.6785 }, office, Math.ceil(distance))).toBe(true);
+    expect(
+      isWithinGeofence({ latitude: 9.538, longitude: -13.6785 }, office, Math.ceil(distance)),
+    ).toBe(true);
   });
 });

@@ -51,15 +51,24 @@ async function main() {
   try {
     await db.$transaction(
       async (tx: Prisma.TransactionClient) => {
-        for (const definition of MODULE_DEFINITIONS.filter((m) => !['platform', 'portal'].includes(m.key)))
+        for (const definition of MODULE_DEFINITIONS.filter(
+          (m) => !['platform', 'portal'].includes(m.key),
+        ))
           await tx.module.upsert({
             where: { key: definition.key },
             update: { name: definition.name, description: definition.description },
-            create: { key: definition.key, name: definition.name, description: definition.description },
+            create: {
+              key: definition.key,
+              name: definition.name,
+              description: definition.description,
+            },
           });
 
         const existing = await tx.organization.findUnique({ where: { slug: ORG.slug } });
-        const currentSettings = (existing?.settings ?? {}) as Record<string, Record<string, unknown>>;
+        const currentSettings = (existing?.settings ?? {}) as Record<
+          string,
+          Record<string, unknown>
+        >;
         const organization = await tx.organization.upsert({
           where: { slug: ORG.slug },
           update: {
@@ -67,7 +76,10 @@ async function main() {
             settings: {
               ...currentSettings,
               security: { ...(currentSettings.security ?? {}), mfaRequiredRoleKeys: MFA_REQUIRED },
-              access: { ...(currentSettings.access ?? {}), assignableRoleKeys: PILOT_ROLES.map((r) => r.key) },
+              access: {
+                ...(currentSettings.access ?? {}),
+                assignableRoleKeys: PILOT_ROLES.map((r) => r.key),
+              },
             },
           },
           create: {
@@ -79,7 +91,9 @@ async function main() {
             },
           },
         });
-        plan.push(`${existing ? 'Updated' : 'Created'} organization ${organization.name} (${organization.slug})`);
+        plan.push(
+          `${existing ? 'Updated' : 'Created'} organization ${organization.name} (${organization.slug})`,
+        );
 
         for (const branch of BRANCHES) {
           await tx.branch.upsert({
@@ -87,12 +101,17 @@ async function main() {
             update: { isActive: true },
             create: { ...branch, organizationId: organization.id },
           });
-          plan.push(`Branch ${branch.code} ${branch.name} (${branch.currency}, ${branch.timezone})`);
+          plan.push(
+            `Branch ${branch.code} ${branch.name} (${branch.currency}, ${branch.timezone})`,
+          );
         }
 
         for (const role of PILOT_ROLES) {
           const match = await tx.role.findFirst({
-            where: { organizationId: organization.id, OR: [{ systemKey: role.key }, { name: role.name }] },
+            where: {
+              organizationId: organization.id,
+              OR: [{ systemKey: role.key }, { name: role.name }],
+            },
           });
           // Never silently repurpose an existing role that members may already hold.
           if (match && match.systemKey !== role.key)
@@ -109,13 +128,17 @@ async function main() {
           };
           if (match) await tx.role.update({ where: { id: match.id }, data });
           else await tx.role.create({ data: { ...data, organizationId: organization.id } });
-          plan.push(`Role ${role.name} [${role.key}, scope ${role.dataScope}, ${role.permissions.length} permissions]`);
+          plan.push(
+            `Role ${role.name} [${role.key}, scope ${role.dataScope}, ${role.permissions.length} permissions]`,
+          );
         }
 
         for (const module of await tx.module.findMany()) {
           const enabled = PILOT_MODULES.includes(module.key as never);
           await tx.organizationModule.upsert({
-            where: { organizationId_moduleId: { organizationId: organization.id, moduleId: module.id } },
+            where: {
+              organizationId_moduleId: { organizationId: organization.id, moduleId: module.id },
+            },
             update: { enabled },
             create: { organizationId: organization.id, moduleId: module.id, enabled },
           });
@@ -134,7 +157,12 @@ async function main() {
           where: { organizationId: organization.id, systemKey: 'ght_owner' },
         });
         await tx.invitation.updateMany({
-          where: { organizationId: organization.id, email: ownerEmail, acceptedAt: null, revokedAt: null },
+          where: {
+            organizationId: organization.id,
+            email: ownerEmail,
+            acceptedAt: null,
+            revokedAt: null,
+          },
           data: { revokedAt: new Date() },
         });
         const rawToken = randomBytes(32).toString('base64url');
@@ -160,7 +188,10 @@ async function main() {
         });
         plan.push(`Owner invitation for ${ownerEmail} (expires in 72 hours)`);
         if (dryRun) throw new DryRun();
-        pendingOwnerLink = { url: `${settings.appUrl}/#/accept-invite?token=${rawToken}`, organization: organization.name };
+        pendingOwnerLink = {
+          url: `${settings.appUrl}/#/accept-invite?token=${rawToken}`,
+          organization: organization.name,
+        };
       },
       { timeout: 60_000 },
     );
@@ -195,7 +226,9 @@ async function deliverOwnerLink(email: string, link: { url: string; organization
     console.log(`- Owner invitation emailed to ${email}`);
   } catch {
     // Operator fallback; this terminal output is the only copy of the link.
-    console.log('- Email delivery failed. Give this one-time link to the owner over a secure channel:');
+    console.log(
+      '- Email delivery failed. Give this one-time link to the owner over a secure channel:',
+    );
     console.log(`  ${link.url}`);
   }
 }

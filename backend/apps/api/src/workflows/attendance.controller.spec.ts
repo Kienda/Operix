@@ -5,7 +5,13 @@ import type { AuthenticatedRequest } from '../security/request-context';
 
 function makeRequest(branchIds: string[] = ['branch-1']): AuthenticatedRequest {
   return {
-    auth: { userId: 'user-1', organizationId: 'org-1', sessionId: 's-1', permissions: [], branchIds },
+    auth: {
+      userId: 'user-1',
+      organizationId: 'org-1',
+      sessionId: 's-1',
+      permissions: [],
+      branchIds,
+    },
   } as unknown as AuthenticatedRequest;
 }
 
@@ -19,7 +25,9 @@ describe('AttendanceController#checkIn', () => {
   it('rejects a second check-in while one is already open', async () => {
     const db = { businessRecord: { findFirst: vi.fn().mockResolvedValue({ id: 'existing' }) } };
     const controller = new AttendanceController(db as never);
-    await expect(controller.checkIn(insideFix, makeRequest())).rejects.toBeInstanceOf(BadRequestException);
+    await expect(controller.checkIn(insideFix, makeRequest())).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it('marks a shift ACTIVE when inside the geofence with good accuracy', async () => {

@@ -24,9 +24,7 @@ export const geofenceSchema = z
       .max(500)
       .nullish(),
     address: mediumText.optional(),
-    outsideBehaviour: z
-      .enum(['reject', 'flag', 'require_approval'])
-      .default('require_approval'),
+    outsideBehaviour: z.enum(['reject', 'flag', 'require_approval']).default('require_approval'),
     isActive: z.boolean().default(true),
   })
   .superRefine((v, ctx) => {

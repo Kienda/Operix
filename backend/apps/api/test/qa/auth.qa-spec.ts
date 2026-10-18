@@ -1,6 +1,15 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { generate } from 'otplib';
-import { buildWorld, call, createActor, createTenant, db, login, testPassword, type World } from './harness';
+import {
+  buildWorld,
+  call,
+  createActor,
+  createTenant,
+  db,
+  login,
+  testPassword,
+  type World,
+} from './harness';
 
 let w: World;
 beforeAll(async () => {
@@ -18,7 +27,13 @@ describe('Authentication', () => {
   });
 
   it('rejects anonymous access to business endpoints with 401', async () => {
-    for (const path of ['/records/customers', '/finance/summary', '/workspace/dashboard', '/inventory/items', '/attendance/mine'])
+    for (const path of [
+      '/records/customers',
+      '/finance/summary',
+      '/workspace/dashboard',
+      '/inventory/items',
+      '/attendance/mine',
+    ])
       expect((await call(null, 'GET', path)).status, path).toBe(401);
   });
 
@@ -31,13 +46,17 @@ describe('Authentication', () => {
   });
 
   it('denies a valid GHT token presented with the Atlas organization header', async () => {
-    const res = await call(w.a.owner, 'GET', '/records/customers', undefined, { orgId: w.atlas.id });
+    const res = await call(w.a.owner, 'GET', '/records/customers', undefined, {
+      orgId: w.atlas.id,
+    });
     expect(res.status).toBe(403);
   });
 
   it('binds a session to the workspace it was issued for (multi-membership user)', async () => {
     const user = await db().user.findUniqueOrThrow({ where: { id: w.a.employee.userId } });
-    const role = await db().role.findFirstOrThrow({ where: { organizationId: w.atlas.id, name: 'Employee' } });
+    const role = await db().role.findFirstOrThrow({
+      where: { organizationId: w.atlas.id, name: 'Employee' },
+    });
     await db().organizationUser.create({
       data: { organizationId: w.atlas.id, userId: user.id, roleId: role.id, branchIds: [w.AT] },
     });
@@ -46,7 +65,10 @@ describe('Authentication', () => {
     expect(ambiguous.body.error.code).toBe('WORKSPACE_SELECTION_REQUIRED');
     const ght = await login(user.email, testPassword(), { organizationSlug: w.ght.slug });
     expect(ght.status).toBe(201);
-    const crossed = await call(null, 'GET', '/attendance/mine', undefined, { token: ght.body.accessToken, orgId: w.atlas.id });
+    const crossed = await call(null, 'GET', '/attendance/mine', undefined, {
+      token: ght.body.accessToken,
+      orgId: w.atlas.id,
+    });
     expect(crossed.status).toBe(401);
   });
 
@@ -55,7 +77,9 @@ describe('Authentication', () => {
     const first = await call(null, 'POST', '/auth/refresh', { refreshToken: actor.refreshToken });
     expect(first.status).toBe(201);
     expect(first.body.refreshToken).not.toBe(actor.refreshToken);
-    expect((await call(null, 'POST', '/auth/refresh', { refreshToken: actor.refreshToken })).status).toBe(401);
+    expect(
+      (await call(null, 'POST', '/auth/refresh', { refreshToken: actor.refreshToken })).status,
+    ).toBe(401);
   });
 
   it('logout revokes the session for subsequent requests', async () => {
@@ -65,7 +89,10 @@ describe('Authentication', () => {
   });
 
   it('a suspended user loses access on the next request', async () => {
-    const actor = await createActor(w.ght, 'readonly_user', { alias: 'suspended', branches: ['HQ'] });
+    const actor = await createActor(w.ght, 'readonly_user', {
+      alias: 'suspended',
+      branches: ['HQ'],
+    });
     await db().user.update({ where: { id: actor.userId }, data: { status: 'SUSPENDED' } });
     expect((await call(actor, 'GET', '/records/customers')).status).toBe(403);
     expect((await login(actor.email)).status).toBe(401);
@@ -78,14 +105,18 @@ describe('MFA', () => {
     expect((await call(actor, 'POST', '/auth/mfa/enroll', {})).status).toBeGreaterThanOrEqual(400);
     const enroll = await call(actor, 'POST', '/auth/mfa/enroll', { password: testPassword() });
     expect(enroll.status).toBe(201);
-    const confirm = await call(actor, 'POST', '/auth/mfa/confirm', { code: await generate({ secret: enroll.body.secret }) });
+    const confirm = await call(actor, 'POST', '/auth/mfa/confirm', {
+      code: await generate({ secret: enroll.body.secret }),
+    });
     expect(confirm.status).toBe(201);
 
     // AUTH-01: an active session plus password alone must not reset an enabled factor.
     const takeover = await call(actor, 'POST', '/auth/mfa/enroll', { password: testPassword() });
     expect(takeover.status).toBe(401);
     expect((await login(actor.email)).status).toBe(401);
-    const withCode = await login(actor.email, testPassword(), { mfaCode: await generate({ secret: enroll.body.secret }) });
+    const withCode = await login(actor.email, testPassword(), {
+      mfaCode: await generate({ secret: enroll.body.secret }),
+    });
     expect(withCode.status).toBe(201);
   });
 });
@@ -114,7 +145,15 @@ describe('Subscription lifecycle', () => {
     });
     const owner = await createActor(tenant, 'company_owner', { alias: 'expiredOwner' });
     expect((await call(owner, 'GET', '/records/customers')).status).toBe(200);
-    expect((await call(owner, 'POST', '/records', { module: 'customers', type: 'company', name: 'Blocked write' })).status).toBe(403);
+    expect(
+      (
+        await call(owner, 'POST', '/records', {
+          module: 'customers',
+          type: 'company',
+          name: 'Blocked write',
+        })
+      ).status,
+    ).toBe(403);
     expect([200, 201]).toContain((await call(owner, 'POST', '/auth/logout')).status);
   });
 });

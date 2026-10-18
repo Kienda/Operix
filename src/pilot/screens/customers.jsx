@@ -202,7 +202,7 @@ export function CustomerForm({ session, customer, onClose, onSaved }) {
             {(p) => <input {...p} type="email" maxLength={254} value={form.email} onChange={set('email')} />}
           </Field>
           <Field label={t('common.phone')} hint={t('customers.phoneHint')}>
-            {(p) => <input {...p} type="tel" maxLength={40} pattern="[+0-9 ()./-]{4,40}" value={form.phone} onChange={set('phone')} />}
+            {(p) => <input {...p} type="tel" maxLength={40} pattern="[+0-9 .\(\)\/\-]{4,40}" value={form.phone} onChange={set('phone')} />}
           </Field>
           <Field label={t('customers.country')}>
             {(p) => (

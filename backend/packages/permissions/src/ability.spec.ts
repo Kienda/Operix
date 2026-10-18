@@ -22,13 +22,23 @@ describe('permission catalog', () => {
 
 describe('buildAbility', () => {
   it('does not expand an explicit branch ceiling for an all-scope role', () => {
-    const ability = buildAbility({ rolePermissions: [], enabledModules: ALL_MODULES, dataScope: 'all', branchIds: ['a'] });
+    const ability = buildAbility({
+      rolePermissions: [],
+      enabledModules: ALL_MODULES,
+      dataScope: 'all',
+      branchIds: ['a'],
+    });
     expect(ability.canAccessBranch('a')).toBe(true);
     expect(ability.canAccessBranch('b')).toBe(false);
     expect(ability.canAccessBranch(null)).toBe(false);
   });
   it('denies all branches when a branch role has no assigned branches', () => {
-    const ability = buildAbility({ rolePermissions: [], enabledModules: ALL_MODULES, dataScope: 'branch', branchIds: [] });
+    const ability = buildAbility({
+      rolePermissions: [],
+      enabledModules: ALL_MODULES,
+      dataScope: 'branch',
+      branchIds: [],
+    });
     expect(ability.canAccessBranch('a')).toBe(false);
     expect(ability.canAccessBranch(null)).toBe(false);
   });

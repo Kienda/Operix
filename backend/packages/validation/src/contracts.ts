@@ -93,7 +93,10 @@ export const contractApprovalSchema = z.object({
 });
 
 export const sendContractSchema = z.object({
-  channels: z.array(z.enum(['email', 'whatsapp', 'portal'])).min(1).default(['email']),
+  channels: z
+    .array(z.enum(['email', 'whatsapp', 'portal']))
+    .min(1)
+    .default(['email']),
   recipientEmails: z.array(z.string().email()).max(10).default([]),
   message: longText.optional(),
   signatureDeadline: z.coerce.date().nullish(),

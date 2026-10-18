@@ -13,7 +13,7 @@ export default defineConfig({
     include: ['test/qa/**/*.qa-spec.ts'],
     globalSetup: ['test/qa/global-setup.ts'],
     pool: 'forks',
-    poolOptions: { forks: { singleFork: true } },
+    maxWorkers: 1,
     fileParallelism: false,
     testTimeout: 60_000,
     hookTimeout: 180_000,

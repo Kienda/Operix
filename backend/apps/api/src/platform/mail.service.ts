@@ -13,7 +13,10 @@ export interface OutgoingMail {
 }
 
 const escape = (value: string) =>
-  value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  value.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  );
 
 /** Minimal, accessible transactional layout; every interpolated value is escaped. */
 export function actionMail(input: {

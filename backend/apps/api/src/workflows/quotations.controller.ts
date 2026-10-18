@@ -28,12 +28,7 @@ import { Prisma, type RecordStatus } from '@operix/database';
 import { DatabaseService } from '../platform/database.module';
 import type { AuthenticatedRequest, AuthContext } from '../security/request-context';
 import { RequirePermissions } from '../security/permissions.decorator';
-import {
-  jsonObject,
-  projectRecord,
-  recordWhere,
-  validateBranch,
-} from '../security/authorization';
+import { jsonObject, projectRecord, recordWhere, validateBranch } from '../security/authorization';
 import { serializable } from '../platform/transaction';
 import { nextNumber } from '../platform/numbering';
 import { decimal, money } from './decimal';
@@ -88,7 +83,8 @@ export function priceQuotation(input: Pick<QuotationDto, 'currency' | 'taxRate' 
   const subtotal = items.reduce((sum, i) => sum.add(i.lineTotal), new Prisma.Decimal(0));
   const tax = round(subtotal.mul(rate).div(100), input.currency);
   const total = subtotal.add(tax);
-  if (total.greaterThan('999999999999.99')) throw new BadRequestException('Quotation total is too large');
+  if (total.greaterThan('999999999999.99'))
+    throw new BadRequestException('Quotation total is too large');
   return {
     items,
     taxRate: rate.toFixed(),
@@ -102,8 +98,18 @@ type Transition = { from: RecordStatus[]; to: RecordStatus; action: string; outc
 const TRANSITIONS: Record<string, Transition> = {
   send: { from: ['DRAFT'], to: 'PENDING', action: 'QUOTATION_SENT' },
   accept: { from: ['PENDING'], to: 'APPROVED', action: 'QUOTATION_ACCEPTED', outcome: 'accepted' },
-  decline: { from: ['PENDING'], to: 'CANCELLED', action: 'QUOTATION_DECLINED', outcome: 'declined' },
-  cancel: { from: ['DRAFT', 'PENDING'], to: 'CANCELLED', action: 'QUOTATION_CANCELLED', outcome: 'cancelled' },
+  decline: {
+    from: ['PENDING'],
+    to: 'CANCELLED',
+    action: 'QUOTATION_DECLINED',
+    outcome: 'declined',
+  },
+  cancel: {
+    from: ['DRAFT', 'PENDING'],
+    to: 'CANCELLED',
+    action: 'QUOTATION_CANCELLED',
+    outcome: 'cancelled',
+  },
 };
 const PAST: Record<keyof typeof TRANSITIONS, string> = {
   send: 'sent',
@@ -126,7 +132,8 @@ export class QuotationsController {
     const customer = await tx.businessRecord.findFirst({
       where: { AND: [recordWhere(ctx, 'customers'), { id }] },
     });
-    if (!customer) throw new BadRequestException('Customer is invalid or outside your access scope');
+    if (!customer)
+      throw new BadRequestException('Customer is invalid or outside your access scope');
     return customer;
   }
 
@@ -159,7 +166,10 @@ export class QuotationsController {
           updatedBy: r.auth.userId,
         },
       });
-      await this.audit(tx, r.auth, record.id, 'QUOTATION_CREATED', { total: priced.total, currency: body.currency });
+      await this.audit(tx, r.auth, record.id, 'QUOTATION_CREATED', {
+        total: priced.total,
+        currency: body.currency,
+      });
       return projectRecord(r.auth, record);
     });
   }
@@ -177,7 +187,10 @@ export class QuotationsController {
       if (current.status !== 'DRAFT')
         throw new BadRequestException('Only draft quotations can be edited');
       const customer = await this.customer(tx, r.auth, body.customerId);
-      if (customer.branchId !== current.branchId || (body.branchId && body.branchId !== current.branchId))
+      if (
+        customer.branchId !== current.branchId ||
+        (body.branchId && body.branchId !== current.branchId)
+      )
         throw new BadRequestException('A quotation cannot move to another branch');
       const record = await tx.businessRecord.update({
         where: { id },
@@ -194,7 +207,10 @@ export class QuotationsController {
           updatedBy: r.auth.userId,
         },
       });
-      await this.audit(tx, r.auth, id, 'QUOTATION_UPDATED', { total: priced.total, currency: body.currency });
+      await this.audit(tx, r.auth, id, 'QUOTATION_UPDATED', {
+        total: priced.total,
+        currency: body.currency,
+      });
       return projectRecord(r.auth, record);
     });
   }
@@ -235,19 +251,33 @@ export class QuotationsController {
     return record;
   }
 
-  private transition(ctx: AuthContext, id: string, name: keyof typeof TRANSITIONS, reason?: string) {
+  private transition(
+    ctx: AuthContext,
+    id: string,
+    name: keyof typeof TRANSITIONS,
+    reason?: string,
+  ) {
     const rule = TRANSITIONS[name];
     return serializable(this.db, async (tx) => {
       const current = await this.load(tx, ctx, id);
-      if (current.status === rule.to && (rule.outcome ?? null) === (jsonObject(current.data).outcome ?? null))
+      if (
+        current.status === rule.to &&
+        (rule.outcome ?? null) === (jsonObject(current.data).outcome ?? null)
+      )
         return projectRecord(ctx, current); // idempotent replay
       if (!rule.from.includes(current.status))
         throw new BadRequestException(
           `This quotation cannot be ${PAST[name]} from its current state (${current.status})`,
         );
       const data = jsonObject(current.data);
-      if (name === 'accept' && typeof data.validUntil === 'string' && data.validUntil < new Date().toISOString().slice(0, 10))
-        throw new BadRequestException('This quotation has expired; revise and resend it before accepting');
+      if (
+        name === 'accept' &&
+        typeof data.validUntil === 'string' &&
+        data.validUntil < new Date().toISOString().slice(0, 10)
+      )
+        throw new BadRequestException(
+          'This quotation has expired; revise and resend it before accepting',
+        );
       const record = await tx.businessRecord.update({
         where: { id },
         data: {
@@ -261,7 +291,11 @@ export class QuotationsController {
           updatedBy: ctx.userId,
         },
       });
-      await this.audit(tx, ctx, id, rule.action, { from: current.status, to: rule.to, reason: reason ?? null });
+      await this.audit(tx, ctx, id, rule.action, {
+        from: current.status,
+        to: rule.to,
+        reason: reason ?? null,
+      });
       return projectRecord(ctx, record);
     });
   }

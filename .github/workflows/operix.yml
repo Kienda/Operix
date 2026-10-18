@@ -75,8 +75,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           python3 -m unittest discover -s deploy/tests -v
-          bash -n deploy/scripts/*.sh deploy/docker/*.sh
-          docker run --rm -v "$PWD:/mnt:ro" koalaman/shellcheck:v0.10.0 -S warning /mnt/deploy/scripts/*.sh /mnt/deploy/docker/*.sh
+          for script in deploy/scripts/*.sh deploy/docker/*.sh; do bash -n "$script"; done
+          # Expand repository-relative paths on the runner, then resolve the same
+          # paths inside the container. /mnt globs do not exist on the runner.
+          docker run --rm -v "$PWD:/mnt:ro" -w /mnt koalaman/shellcheck:v0.10.0 -S warning deploy/scripts/*.sh deploy/docker/*.sh
       - name: Existing lint and formatting gates
         if: ${{ !cancelled() }}
         run: |
@@ -118,14 +120,15 @@ jobs:
           for image in api worker migrate web; do
             docker save "local/operix-$image:test" -o image.tar
             docker run --rm -v "$PWD/image.tar:/scan/image.tar:ro" -v "$HOME/.cache/trivy:/root/.cache/" \
-              aquasec/trivy:0.61.1 image --input /scan/image.tar --scanners vuln --severity HIGH,CRITICAL --exit-code 1 || scan_status=1
+              aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222 image --input /scan/image.tar --scanners vuln --severity HIGH,CRITICAL --exit-code 1 || scan_status=1
             rm image.tar
           done
           exit "$scan_status"
 
   publish:
     needs: [verify, security, images]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.OPERIX_AWS_ENABLED == 'true'
+    # Explicit approval hold: repair CI without granting AWS publication access.
+    if: ${{ false && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.OPERIX_AWS_ENABLED == 'true' }}
     environment: operix-images
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -156,7 +159,7 @@ jobs:
             image="$registry/operix-$target:$tag"
             docker build -f "$file" --target "$target" --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$image" .
             docker save "$image" -o image.tar
-            docker run --rm -v "$PWD/image.tar:/scan/image.tar:ro" aquasec/trivy:0.61.1 image --input /scan/image.tar \
+            docker run --rm -v "$PWD/image.tar:/scan/image.tar:ro" aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222 image --input /scan/image.tar \
               --scanners vuln --severity HIGH,CRITICAL --exit-code 1
             rm image.tar
             docker push "$image"
@@ -177,7 +180,8 @@ jobs:
 
   staging:
     needs: publish
-    if: vars.OPERIX_STAGING_DEPLOY_ENABLED == 'true'
+    # Removing this hold requires separate deployment approval.
+    if: ${{ false && vars.OPERIX_STAGING_DEPLOY_ENABLED == 'true' }}
     environment: operix-staging
     runs-on: ubuntu-24.04
     timeout-minutes: 30

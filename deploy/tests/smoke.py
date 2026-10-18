@@ -46,6 +46,8 @@ with tempfile.TemporaryDirectory(prefix="operix-smoke-") as directory:
                 assert response.status == 200, path
         with urllib.request.urlopen("http://127.0.0.1:18081/api/v1/health") as response:
             assert json.load(response)["database"] == "connected"
+        with urllib.request.urlopen("http://127.0.0.1:18081/robots.txt") as response:
+            assert 'Disallow: /' in response.read().decode(), "Staff-site robots policy was not packaged"
         # A fresh deployment must contain no seed identities or business data.
         result = compose("exec", "-T", "postgres", "psql", "-U", "operix_admin", "-d", "operix", "-Atc",
                          'SELECT (SELECT count(*) FROM "User") + (SELECT count(*) FROM "Organization")', capture=True)

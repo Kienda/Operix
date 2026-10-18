@@ -1,13 +1,6 @@
 import { Body, Controller, Get, Headers, Post, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import {
-  IsEmail,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import type { Request } from 'express';
 import { AccountSecurity, Public } from '../security/public.decorator';
 import { RateLimit } from '../security/rate-limit';

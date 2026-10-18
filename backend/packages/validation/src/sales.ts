@@ -116,7 +116,10 @@ export const quotationSchema = z.object({
 export const updateQuotationSchema = quotationSchema.partial().omit({ customerId: true });
 
 export const sendQuotationSchema = z.object({
-  channels: z.array(z.enum(['email', 'sms', 'whatsapp', 'portal'])).min(1).default(['email']),
+  channels: z
+    .array(z.enum(['email', 'sms', 'whatsapp', 'portal']))
+    .min(1)
+    .default(['email']),
   recipientEmails: z.array(z.string().email()).max(10).default([]),
   message: longText.optional(),
   attachPdf: z.boolean().default(true),
