@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { parseEnv } from 'node:util';
@@ -8,7 +8,8 @@ import { execFileSync } from 'node:child_process';
 import { PrismaClient } from '@operix/database';
 
 const root = resolve('../..');
-const env = parseEnv(readFileSync(resolve(root, '.env'), 'utf8'));
+const envFile = resolve(root, '.env');
+const env = existsSync(envFile) ? parseEnv(readFileSync(envFile, 'utf8')) : {};
 const url = new URL(process.env.P0_TEST_DATABASE_URL ?? env.DATABASE_URL);
 if (!['localhost', '127.0.0.1'].includes(url.hostname))
   throw Error('Migration rehearsal requires local PostgreSQL');

@@ -1,0 +1,172 @@
+name: operix-staging
+
+x-common: &common
+  restart: unless-stopped
+  init: true
+  security_opt: [no-new-privileges:true]
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: '3'}
+  pids_limit: 128
+
+services:
+  postgres:
+    <<: *common
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_USER: operix_admin
+      POSTGRES_DB: operix
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_admin_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    secrets: [db_admin_password, db_migrate_password, db_app_password]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sh:/docker-entrypoint-initdb.d/10-operix.sh:ro
+    networks: [data]
+    mem_limit: 1g
+    cpus: 0.75
+    shm_size: 128m
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U operix_admin -d operix']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  redis:
+    <<: *common
+    image: redis:7.4-alpine
+    command: [sh, /opt/operix/redis-start.sh]
+    secrets: [redis_password]
+    volumes:
+      - redis_data:/data
+      - ./docker/redis-start.sh:/opt/operix/redis-start.sh:ro
+    tmpfs: ['/run/operix:mode=1777,size=1m']
+    networks: [queue]
+    mem_limit: 256m
+    cpus: 0.25
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH=$$(cat /run/secrets/redis_password) redis-cli ping | grep -qx PONG']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    image: ${ECR_REGISTRY:?set ECR_REGISTRY}/operix-migrate:${IMAGE_TAG:?set IMAGE_TAG}
+    profiles: [release]
+    restart: 'no'
+    init: true
+    read_only: true
+    tmpfs: ['/tmp:size=64m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      NODE_ENV: production
+      SEED_DEMO_DATA: 'false'
+      OPERIX_SECRET_FILE: /run/secrets/migrate_runtime
+    secrets: [migrate_runtime]
+    networks: [data]
+    mem_limit: 512m
+    cpus: 0.5
+    depends_on:
+      postgres: {condition: service_healthy}
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+
+  api:
+    <<: *common
+    image: ${ECR_REGISTRY:?set ECR_REGISTRY}/operix-api:${IMAGE_TAG:?set IMAGE_TAG}
+    read_only: true
+    tmpfs: ['/tmp:size=64m,mode=1777']
+    cap_drop: [ALL]
+    environment:
+      NODE_ENV: production
+      PORT: '4000'
+      OPERIX_VERSION: ${RELEASE_SHA:?set RELEASE_SHA}
+      OPERIX_SECRET_FILE: /run/secrets/api_runtime
+      SEED_DEMO_DATA: 'false'
+      APP_URL: ${APP_URL:?set APP_URL}
+      CORS_ORIGINS: ${APP_URL}
+      TRUST_PROXY: '2'
+      SWAGGER_ENABLED: 'false'
+      INVITE_LINK_IN_RESPONSE: 'false'
+      REQUEST_LOGGING: 'true'
+      OPERIX_MODULE_ALLOWLIST: core,crm,sales,projects
+      MAIL_DRIVER: smtp
+      MAIL_FROM: ${MAIL_FROM:?set MAIL_FROM}
+      SMTP_HOST: ${SMTP_HOST:?set SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+    secrets: [api_runtime]
+    networks: [application, data, egress]
+    mem_limit: 768m
+    cpus: 0.75
+    depends_on:
+      postgres: {condition: service_healthy}
+    stop_grace_period: 30s
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:4000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 8
+
+  web:
+    <<: *common
+    image: ${ECR_REGISTRY:?set ECR_REGISTRY}/operix-web:${IMAGE_TAG:?set IMAGE_TAG}
+    read_only: true
+    tmpfs: ['/tmp:mode=1777,size=16m']
+    cap_drop: [ALL]
+    ports: ['127.0.0.1:${OPERIX_HTTP_PORT:-18080}:8080']
+    networks: [application, ingress]
+    mem_limit: 128m
+    cpus: 0.25
+    depends_on:
+      api: {condition: service_healthy}
+    stop_grace_period: 15s
+
+  # Do not enable: current worker reports delivery without a provider call.
+  worker:
+    <<: *common
+    profiles: [worker-disabled]
+    image: ${ECR_REGISTRY:?set ECR_REGISTRY}/operix-worker:${IMAGE_TAG:?set IMAGE_TAG}
+    read_only: true
+    tmpfs: ['/tmp:size=32m,mode=1777']
+    cap_drop: [ALL]
+    environment:
+      NODE_ENV: production
+      SEED_DEMO_DATA: 'false'
+      OPERIX_SECRET_FILE: /run/secrets/worker_runtime
+    secrets: [worker_runtime]
+    networks: [data, queue]
+    mem_limit: 256m
+    cpus: 0.25
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, node, --require, /opt/operix/runtime-env.cjs, -e, "const R=require('ioredis');const r=new R(process.env.REDIS_URL,{maxRetriesPerRequest:1});r.ping().then(()=>r.quit()).then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  # The gateway needs an ordinary bridge for host-loopback port publishing.
+  # Data/application bridges remain internal; only web joins this network.
+  ingress: {}
+  application: {internal: true}
+  data: {internal: true}
+  queue: {internal: true}
+  egress: {}
+volumes:
+  postgres_data: {}
+  redis_data: {}
+secrets:
+  db_admin_password: {file: '${SECRETS_DIR:?set SECRETS_DIR}/db_admin_password'}
+  db_migrate_password: {file: '${SECRETS_DIR}/db_migrate_password'}
+  db_app_password: {file: '${SECRETS_DIR}/db_app_password'}
+  redis_password: {file: '${SECRETS_DIR}/redis_password'}
+  api_runtime: {file: '${SECRETS_DIR}/api.json'}
+  migrate_runtime: {file: '${SECRETS_DIR}/migrate.json'}
+  worker_runtime: {file: '${SECRETS_DIR}/worker.json'}

@@ -1,0 +1,17 @@
+name: operix-deploy-tests
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: operix_test
+      POSTGRES_USER: operix_test
+      POSTGRES_PASSWORD: disposable-ci-only
+    ports: ['127.0.0.1:55439:5432']
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U operix_test -d operix_test']
+      interval: 3s
+      retries: 20
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ['127.0.0.1:11025:1025', '127.0.0.1:18025:8025']

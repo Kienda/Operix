@@ -104,7 +104,8 @@ test('Guinea sales rep creates a customer and a GNF quotation with server-comput
   await expect(dialog.getByLabel('Tax / registration number')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('heading', { name: 'Kaloum Printing SARL' })).toBeVisible();
-  await expect(page.getByText('CUS-00001')).toBeVisible();
+  await expect(page.getByText('CUS-00001 · GHT Guinea')).toBeVisible();
+  await expect(page.getByRole('status').getByText('Customer CUS-00001 created.')).toBeVisible();
 
   await page.getByRole('link', { name: 'New quotation' }).click();
   await page.getByLabel('Title').fill('Storefront signage');
@@ -171,7 +172,7 @@ test('employee activates and only sees their own task, which they can progress',
   await task.getByLabel('Assigned to').selectOption({ label: 'Ibrahima Pilot — Employee' });
   await task.getByLabel('Priority').selectOption('high');
   await task.getByRole('button', { name: 'Save' }).click();
-  await expect(owner.getByText('Print the banners')).toBeVisible();
+  await expect(owner.locator('.px-list b', { hasText: 'Print the banners' })).toBeVisible();
 
   const nav = page.getByRole('navigation', { name: 'Main navigation' });
   await expect(nav.getByRole('link')).toHaveText(['Dashboard', 'Tasks', 'My account']);

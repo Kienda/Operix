@@ -25,12 +25,21 @@ tmp/
 .tmp-build/
 uploads/
 .agents
+.aws/
+.codex/
 design
 # Local package cache
 .pnpm-store/
 
 # Temporary workspace
 .tmp-workspace-api/
+
+# Deployment runtime material (examples remain reviewable)
+deploy/runtime/
+deploy/secrets.json
+deploy/host.env
+deploy/releases/
+deploy/backups/
 
 # Testing artifacts
 test-results/
@@ -55,3 +64,9 @@ __pycache__/
 # IDE settings
 .vscode/
 .idea/
+# Generated E2E artifacts
+e2e/.dist/
+e2e/report/
+e2e/.state.json
+playwright-report/
+test-results/

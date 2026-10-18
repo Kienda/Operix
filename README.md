@@ -1,5 +1,9 @@
 # Operix
 
+AWS deployment files and approval requirements are in [deploy/README.md](deploy/README.md).
+See [deployment verification](deploy/verification.md) for current blockers. Deployment is restricted-staging
+only and disabled by default; no live AWS, DNS, shared proxy or Tontin change is authorized by these files.
+
 Operix is Global High Tech's multi-tenant business operations SaaS. The React/Vite client lives at the repository root; the NestJS API, worker, shared RBAC/validation packages, Prisma schema, and deployment infrastructure live in `backend/`.
 
 ## Local development

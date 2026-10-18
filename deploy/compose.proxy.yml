@@ -1,0 +1,12 @@
+# Optional only AFTER approval: attach just the web gateway to a NEW edge network.
+# Never point this at Tontin's private application/database network.
+services:
+  web:
+    networks:
+      application: {}
+      edge:
+        aliases: [operix-staging-gateway]
+networks:
+  edge:
+    name: ght-operix-edge
+    external: true

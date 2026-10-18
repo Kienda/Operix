@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { parseEnv } from 'node:util';
@@ -15,14 +15,16 @@ import { generate, generateSecret } from 'otplib';
 // Real Nest HTTP stack and PostgreSQL, in an isolated schema. No seed/reset or
 // operational tenant mutations. Only this run's UUID-named schema is dropped.
 const root = resolve('../..');
-const env = parseEnv(readFileSync(resolve(root, '.env'), 'utf8'));
-const url = new URL(process.env.P0_TEST_DATABASE_URL ?? env.DATABASE_URL);
+const envFile = resolve(root, '.env');
+const env = existsSync(envFile) ? parseEnv(readFileSync(envFile, 'utf8')) : {};
+const baseUrl = process.env.P0_TEST_DATABASE_URL ?? env.DATABASE_URL;
+const url = new URL(baseUrl);
 if (!['localhost', '127.0.0.1'].includes(url.hostname))
   throw Error('P0 tests require a local PostgreSQL server');
 const schema = `p0_test_${randomUUID().replaceAll('-', '')}`;
 url.searchParams.set('schema', schema);
 const db = new PrismaClient({ datasourceUrl: url.toString() });
-const admin = new PrismaClient({ datasourceUrl: env.DATABASE_URL });
+const admin = new PrismaClient({ datasourceUrl: baseUrl });
 const requireDb = createRequire(resolve(root, 'packages/database/package.json'));
 const password = randomBytes(32).toString('base64url');
 let server,

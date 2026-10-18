@@ -1,10 +1,15 @@
 # AWS deployment
 
-1. Provision a private RDS PostgreSQL instance, private S3 bucket, ElastiCache Redis, and Ubuntu LTS EC2 in a VPC. Permit database/Redis traffic only from the application security group.
-2. Store production environment values in Secrets Manager/Parameter Store. Set strong JWT/encryption secrets, `NODE_ENV=production`, restricted CORS, S3 credentials/role, and SES SMTP credentials.
-3. Build immutable API, worker, and client artifacts in CI after lint, typecheck, tests, and builds pass.
-4. Deploy with Docker Compose or systemd, run `pnpm db:deploy` as a controlled release step, then start the API/worker.
-5. Put Nginx in front, configure the production DNS record and Certbot/ACM-managed TLS, and verify `/api/v1/health`.
-6. Enable RDS automated backups/PITR, S3 versioning/lifecycle, CloudWatch logs/alarms, restricted key-only SSH, firewalling, and unattended security updates.
+Use the [restricted staging deployment runbook](../deploy/README.md) and
+[verification/release gates](../deploy/verification.md). The implementation targets the existing shared
+Ubuntu EC2 in us-east-1, under `/opt/ght/apps/operix`, with isolated Docker Compose services.
+RDS/ElastiCache are not prerequisites for this selected staging architecture.
 
-For rollback, retain the previous image, stop traffic, restore the previous application image, and only restore RDS from a snapshot/PITR when the migration is not backward compatible. Test restoration quarterly.
+GitHub Actions checks the locked frontend/backend, builds and tests Linux images, publishes unique ECR tags
+only after gates, and uses OIDC plus a restricted SSM document. AWS publication/deployment switches remain
+disabled until explicitly configured after approval. No AWS/DNS/proxy/Tontin change has been performed.
+
+The September 30 audit and October 2 update remain the implementation baseline. Successful image builds
+do not authorize staff access: dependency advisories, broad QA/browser failures, operational restore and
+restricted-staging acceptance must be resolved. The worker is deliberately disabled because delivery and
+export/render jobs are unfinished. No demo seed or default-account creation runs during deployment.

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "2.2",
+  "description": "Restricted Operix staging release only; no arbitrary shell parameter",
+  "parameters": {
+    "ReleaseId": {"type": "String", "allowedPattern": "^[0-9a-f]{40}-[0-9]+-[0-9]+$", "interpolationType": "ENV_VAR"},
+    "Checksum": {"type": "String", "allowedPattern": "^[0-9a-f]{64}$", "interpolationType": "ENV_VAR"},
+    "Mode": {"type": "String", "allowedValues": ["deploy", "rollback"], "interpolationType": "ENV_VAR"}
+  },
+  "mainSteps": [{
+    "action": "aws:runShellScript",
+    "name": "releaseOperixStaging",
+    "precondition": {"StringEquals": ["platformType", "Linux"]},
+    "inputs": {
+      "timeoutSeconds": "1500",
+      "runCommand": ["set -eu", "test -n \"${SSM_ReleaseId:-}\" && test -n \"${SSM_Checksum:-}\" && test -n \"${SSM_Mode:-}\"", "/usr/local/libexec/operix-receive-release \"$SSM_ReleaseId\" \"$SSM_Checksum\" \"$SSM_Mode\""]
+    }
+  }]
+}

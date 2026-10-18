@@ -1,0 +1,45 @@
+# NEW, separate server blocks for the existing edge proxy, installed only after approval.
+# Host Nginx: loopback gateway below. Docker Nginx: after approved edge-network
+# attachment, use operix-staging-gateway:8080 with Docker DNS resolution instead.
+# Never overwrite Tontin's config. Test nginx -t, then reload only the proxy.
+server {
+    listen 80;
+    server_name operix.globalhightech.com api.operix.globalhightech.com;
+    location /.well-known/acme-challenge/ { root /var/www/operix-acme; }
+    location / { return 301 https://$host$request_uri; }
+}
+server {
+    listen 443 ssl;
+    server_name operix.globalhightech.com;
+    ssl_certificate /etc/letsencrypt/live/operix.globalhightech.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/operix.globalhightech.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    include /etc/nginx/snippets/operix-staging-access.conf;
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    location / {
+        proxy_pass http://127.0.0.1:18080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Request-ID $request_id;
+    }
+}
+server {
+    listen 443 ssl;
+    server_name api.operix.globalhightech.com;
+    ssl_certificate /etc/letsencrypt/live/api.operix.globalhightech.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.operix.globalhightech.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    include /etc/nginx/snippets/operix-staging-access.conf;
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    location /api/ {
+        proxy_pass http://127.0.0.1:18080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Request-ID $request_id;
+    }
+    location / { return 404; }
+}

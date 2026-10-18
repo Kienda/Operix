@@ -1,0 +1,213 @@
+name: Operix verify, package and restricted staging
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: operix-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-bookworm
+        env:
+          POSTGRES_DB: operix_test
+          POSTGRES_USER: operix_test
+          POSTGRES_PASSWORD: disposable-ci-only
+        ports: ['55439:5432']
+        options: --health-cmd "pg_isready -U operix_test -d operix_test" --health-interval 5s --health-retries 20
+      mailpit:
+        image: axllent/mailpit:v1.27
+        ports: ['11025:1025', '18025:8025']
+    env:
+      CI: 'true'
+      TEST_DATABASE_URL: postgresql://operix_test:disposable-ci-only@127.0.0.1:55439/operix_test
+      P0_TEST_DATABASE_URL: postgresql://operix_test:disposable-ci-only@127.0.0.1:55439/operix_test
+      QA_TEST_DATABASE_URL: postgresql://operix_test:disposable-ci-only@127.0.0.1:55439/operix_test
+      DATABASE_URL: postgresql://operix_test:disposable-ci-only@127.0.0.1:55439/operix_test
+      TEST_SMTP_PORT: '11025'
+      MAILPIT_URL: http://127.0.0.1:18025
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: {node-version: '24'}
+      - name: Install locked dependencies
+        run: |
+          npm ci
+          npm install --global pnpm@11.1.3
+          pnpm --dir backend install --frozen-lockfile
+          # The legacy P0 harness reads this file even with URL overrides.
+          printf 'DATABASE_URL=%s\n' "$DATABASE_URL" > backend/.env
+      - name: Backend build
+        run: pnpm --dir backend build --force
+      - name: Type checks and unit tests
+        run: |
+          pnpm --dir backend typecheck --force
+          pnpm --dir backend test --force
+      - name: P0 regressions and migration rehearsal (test:e2e aliases test:p0)
+        if: ${{ !cancelled() }}
+        run: pnpm --dir backend test:e2e
+      - name: Pilot API and SMTP integration
+        if: ${{ !cancelled() }}
+        run: pnpm --dir backend --filter @operix/api test:pilot
+      - name: Full authorization and workflow QA
+        if: ${{ !cancelled() }}
+        run: pnpm --dir backend --filter @operix/api test:qa
+      - name: Frontend production build and translations
+        if: ${{ !cancelled() }}
+        run: |
+          npm run check:i18n
+          npm run build
+      - name: Real browser tests
+        if: ${{ !cancelled() }}
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:browser
+      - name: Deployment contracts and shell syntax
+        if: ${{ !cancelled() }}
+        run: |
+          python3 -m unittest discover -s deploy/tests -v
+          bash -n deploy/scripts/*.sh deploy/docker/*.sh
+          docker run --rm -v "$PWD:/mnt:ro" koalaman/shellcheck:v0.10.0 -S warning /mnt/deploy/scripts/*.sh /mnt/deploy/docker/*.sh
+      - name: Existing lint and formatting gates
+        if: ${{ !cancelled() }}
+        run: |
+          pnpm --dir backend lint
+          pnpm --dir backend format:check
+
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: npm install --global pnpm@11.1.3
+      - run: npm ci --ignore-scripts
+      - run: pnpm --dir backend install --frozen-lockfile --ignore-scripts
+      - name: Frontend dependency security gate
+        run: npm audit --audit-level=high
+      - name: Backend dependency security gate (including migration tooling)
+        if: ${{ !cancelled() }}
+        run: pnpm --dir backend audit --audit-level=high
+
+  images:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Build all release images on Linux
+        run: |
+          for target in api worker migrate; do
+            docker build -f deploy/docker/backend.Dockerfile --target "$target" -t "local/operix-$target:test" .
+          done
+          docker build -f deploy/docker/web.Dockerfile -t local/operix-web:test .
+      - name: Exercise actual images, migrations, readiness and empty accounts
+        run: python3 deploy/tests/smoke.py
+      - name: Scan release images
+        run: |
+          scan_status=0
+          for image in api worker migrate web; do
+            docker save "local/operix-$image:test" -o image.tar
+            docker run --rm -v "$PWD/image.tar:/scan/image.tar:ro" -v "$HOME/.cache/trivy:/root/.cache/" \
+              aquasec/trivy:0.61.1 image --input /scan/image.tar --scanners vuln --severity HIGH,CRITICAL --exit-code 1 || scan_status=1
+            rm image.tar
+          done
+          exit "$scan_status"
+
+  publish:
+    needs: [verify, security, images]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.OPERIX_AWS_ENABLED == 'true'
+    environment: operix-images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      release: ${{ steps.package.outputs.release }}
+      checksum: ${{ steps.package.outputs.checksum }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: aws-actions/configure-aws-credentials@cabfdba3510de1431bac9dba27511d97497fc100 # v5
+        with:
+          role-to-assume: ${{ vars.OPERIX_ECR_ROLE_ARN }}
+          aws-region: us-east-1
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+      - name: Build, scan and publish unique release tags
+        env:
+          ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          registry="$ACCOUNT.dkr.ecr.us-east-1.amazonaws.com"
+          tag="$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$registry"
+          for target in api worker migrate web; do
+            file=deploy/docker/backend.Dockerfile
+            [ "$target" != web ] || file=deploy/docker/web.Dockerfile
+            image="$registry/operix-$target:$tag"
+            docker build -f "$file" --target "$target" --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$image" .
+            docker save "$image" -o image.tar
+            docker run --rm -v "$PWD/image.tar:/scan/image.tar:ro" aquasec/trivy:0.61.1 image --input /scan/image.tar \
+              --scanners vuln --severity HIGH,CRITICAL --exit-code 1
+            rm image.tar
+            docker push "$image"
+          done
+      - name: Package deployment configuration
+        id: package
+        env:
+          BUCKET: ${{ vars.OPERIX_ARTIFACT_BUCKET }}
+        run: |
+          set -euo pipefail
+          release="$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          find backend/packages/database/prisma/migrations -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1 > migrations.sha256
+          printf '{"commit":"%s","release":"%s"}\n' "$GITHUB_SHA" "$release" > release.json
+          tar --exclude='__pycache__' --exclude='*.pyc' -czf release.tar.gz deploy migrations.sha256 release.json
+          checksum=$(sha256sum release.tar.gz | cut -d' ' -f1)
+          aws s3 cp release.tar.gz "s3://$BUCKET/operix/releases/$release.tar.gz" --sse AES256 --only-show-errors
+          printf 'release=%s\nchecksum=%s\n' "$release" "$checksum" >> "$GITHUB_OUTPUT"
+
+  staging:
+    needs: publish
+    if: vars.OPERIX_STAGING_DEPLOY_ENABLED == 'true'
+    environment: operix-staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: aws-actions/configure-aws-credentials@cabfdba3510de1431bac9dba27511d97497fc100
+        with:
+          role-to-assume: ${{ vars.OPERIX_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+      - name: Run the fixed Operix staging SSM document
+        env:
+          INSTANCE: ${{ vars.OPERIX_INSTANCE_ID }}
+          RELEASE: ${{ needs.publish.outputs.release }}
+          CHECKSUM: ${{ needs.publish.outputs.checksum }}
+        run: |
+          set -euo pipefail
+          [[ "$INSTANCE" =~ ^i-[0-9a-f]{8,17}$ && "$RELEASE" =~ ^[0-9a-f]{40}-[0-9]+-[0-9]+$ && "$CHECKSUM" =~ ^[0-9a-f]{64}$ ]]
+          parameters=$(jq -n --arg r "$RELEASE" --arg c "$CHECKSUM" '{ReleaseId:[$r],Checksum:[$c],Mode:["deploy"]}')
+          command=$(aws ssm send-command --instance-ids "$INSTANCE" --document-name Operix-Staging-Release \
+            --document-version '1' --parameters "$parameters" --timeout-seconds 120 --query Command.CommandId --output text)
+          for attempt in $(seq 1 150); do
+            status=$(aws ssm get-command-invocation --command-id "$command" --instance-id "$INSTANCE" --query Status --output text 2>/dev/null || true)
+            case "$status" in
+              Success) echo 'Operix restricted staging deployment succeeded'; exit 0;;
+              Failed|Cancelled|TimedOut|Cancelling) echo "SSM release failed: $status"; exit 1;;
+            esac
+            sleep 10
+          done
+          echo 'SSM wait timed out; inspect command state before retrying. No cancellation or host changes were sent.'
+          exit 1
