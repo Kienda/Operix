@@ -108,6 +108,13 @@ endpoints and lifecycle failures remain release blockers, alongside the image fi
 The follow-up local QA run executes every case: **116 passed, 32 failed, zero skipped**
 across all 148 cases. The earlier 26 setup-related skips are now exercised rather than hidden.
 
+Final [run 39093896454](https://github.com/Kienda/Operix/actions/runs/39093896454)
+tested commit `5b89358`, including these fixture corrections. Security passed;
+verify failed only `Full authorization and workflow QA`; images failed only
+`Scan release images`, with the same vulnerability totals above. All other executed
+steps passed, including the browser suite and Linux image smoke. Publish and staging
+were skipped. The branch therefore remains deliberately blocked from release.
+
 All five Dependabot PR runs were inspected and shared the original failing checks;
 their failed pipelines do not establish upgrade compatibility. No PR was merged or approved.
 The repair is **not ready for staging staff access or production**. AWS infrastructure,
