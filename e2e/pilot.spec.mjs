@@ -174,8 +174,8 @@ test('employee activates and only sees their own task, which they can progress',
   await task.getByRole('button', { name: 'Save' }).click();
   await expect(owner.locator('.px-list b', { hasText: 'Print the banners' })).toBeVisible();
 
-  const nav = page.getByRole('navigation', { name: 'Main navigation' });
-  await expect(nav.getByRole('link')).toHaveText(['Dashboard', 'Tasks', 'My account']);
+  const menu = nav(page);
+  await expect(menu.getByRole('link')).toHaveText(['Dashboard', 'Tasks', 'My account']);
   await page.goto('/#/customers');
   await expect(page.getByText('This page does not exist or is not available to you.')).toBeVisible();
 
