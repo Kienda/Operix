@@ -137,7 +137,7 @@ jobs:
       checksum: ${{ steps.package.outputs.checksum }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - uses: aws-actions/configure-aws-credentials@cabfdba3510de1431bac9dba27511d97497fc100 # v5
+      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5
         with:
           role-to-assume: ${{ vars.OPERIX_ECR_ROLE_ARN }}
           aws-region: us-east-1
@@ -185,7 +185,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: aws-actions/configure-aws-credentials@cabfdba3510de1431bac9dba27511d97497fc100
+      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708
         with:
           role-to-assume: ${{ vars.OPERIX_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
