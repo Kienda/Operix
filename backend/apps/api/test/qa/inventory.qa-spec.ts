@@ -178,13 +178,10 @@ describe('Inventory workflow', () => {
     expect((await move(w.a.projectManager, item, { type: 'ISSUE', quantity: 1 })).status).toBe(403);
   });
 
-  it.fails(
-    'KNOWN GAP (no stock-card endpoint; inventory disabled in pilot): movement history can be read for an item (stock card)',
-    async () => {
-      const item = await newItem('Vinyl matte');
-      expect((await call(w.a.inventory, 'GET', `/inventory/items/${item}/movements`)).status).toBe(
-        200,
-      );
-    },
-  );
+  it('movement history can be read for an item (stock card)', async () => {
+    const item = await newItem('Vinyl matte');
+    expect((await call(w.a.inventory, 'GET', `/inventory/items/${item}/movements`)).status).toBe(
+      200,
+    );
+  });
 });

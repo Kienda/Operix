@@ -99,6 +99,115 @@ async function customer(
 export class FinanceController {
   constructor(private readonly db: DatabaseService) {}
 
+  @RequirePermissions('invoices.view')
+  @Get('invoices')
+  listInvoices(@Req() r: AuthenticatedRequest) {
+    return this.db.invoice.findMany({
+      where: financialWhere(r.auth),
+      take: 100,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        customerId: true,
+        branchId: true,
+        number: true,
+        currency: true,
+        total: true,
+        paid: true,
+        status: true,
+        dueAt: true,
+      },
+    });
+  }
+
+  @RequirePermissions('invoices.view')
+  @Get('invoices/:id')
+  async getInvoice(@Param('id', ParseUUIDPipe) id: string, @Req() r: AuthenticatedRequest) {
+    const row = await this.db.invoice.findFirst({
+      where: { AND: [financialWhere(r.auth), { id }] },
+      select: {
+        id: true,
+        customerId: true,
+        branchId: true,
+        number: true,
+        currency: true,
+        subtotal: true,
+        tax: true,
+        total: true,
+        paid: true,
+        status: true,
+        dueAt: true,
+      },
+    });
+    if (!row) throw new NotFoundException('Invoice not found');
+    return row;
+  }
+
+  @RequirePermissions('payments.view')
+  @Get('payments')
+  listPayments(@Req() r: AuthenticatedRequest) {
+    return this.db.payment.findMany({
+      where: financialWhere(r.auth),
+      take: 100,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        customerId: true,
+        branchId: true,
+        number: true,
+        currency: true,
+        amount: true,
+        status: true,
+        receivedAt: true,
+      },
+    });
+  }
+
+  @RequirePermissions('payments.view')
+  @Get('payments/:id')
+  async getPayment(@Param('id', ParseUUIDPipe) id: string, @Req() r: AuthenticatedRequest) {
+    const row = await this.db.payment.findFirst({
+      where: { AND: [financialWhere(r.auth), { id }] },
+      select: {
+        id: true,
+        customerId: true,
+        branchId: true,
+        number: true,
+        currency: true,
+        amount: true,
+        status: true,
+        receivedAt: true,
+      },
+    });
+    if (!row) throw new NotFoundException('Payment not found');
+    return row;
+  }
+
+  @RequirePermissions('receipts.view')
+  @Get('payments/:id/receipt')
+  async receipt(@Param('id', ParseUUIDPipe) id: string, @Req() r: AuthenticatedRequest) {
+    const row = await this.db.payment.findFirst({
+      where: { AND: [financialWhere(r.auth), { id, status: 'VERIFIED' }] },
+      include: { allocations: { include: { invoice: { select: { number: true } } } } },
+    });
+    if (!row) throw new NotFoundException('Verified payment not found');
+    // Payment numbers are unique per tenant. Derivation is stable across retries;
+    // receipts never exist before authoritative payment verification.
+    return {
+      number: `RCT-${row.number}`,
+      paymentId: row.id,
+      customerId: row.customerId,
+      currency: row.currency,
+      amount: row.amount,
+      issuedAt: row.verifiedAt,
+      allocations: row.allocations.map((a) => ({
+        invoiceId: a.invoiceId,
+        invoiceNumber: a.invoice.number,
+        amount: a.amount,
+      })),
+    };
+  }
+
   @RequirePermissions('invoices.create')
   @Post('invoices')
   createInvoice(@Body() b: InvoiceDto, @Req() r: AuthenticatedRequest) {

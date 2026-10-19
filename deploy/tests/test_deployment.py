@@ -125,6 +125,20 @@ class DeploymentContracts(unittest.TestCase):
         dockerfile = (ROOT / "deploy/docker/tunnel.Dockerfile").read_text()
         self.assertRegex(dockerfile, r"cloudflared:[0-9.]+@sha256:[0-9a-f]{64}")
 
+    def test_dockerfile_copy_sources_are_tracked(self):
+        # CI builds from a clean checkout: an untracked or empty directory (git keeps no empty
+        # directories) builds locally but fails there with '"/path": not found'.
+        tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+        for dockerfile in (ROOT / "deploy/docker").glob("*.Dockerfile"):
+            for line in dockerfile.read_text().splitlines():
+                parts = line.split()
+                if not parts or parts[0] != "COPY" or any(p.startswith("--from") for p in parts):
+                    continue
+                for source in [p for p in parts[1:-1] if not p.startswith("--")]:
+                    prefix = source.rstrip("/")
+                    self.assertTrue(any(f == prefix or f.startswith(prefix + "/") for f in tracked),
+                                    f"{dockerfile.name}: COPY source {source} is not tracked by git")
+
     def test_ssm_accepts_no_arbitrary_command(self):
         document = json.loads((ROOT / "deploy/aws/ssm-document.json").read_text())
         self.assertEqual(set(document["parameters"]), {"ReleaseId", "Checksum", "Mode"})

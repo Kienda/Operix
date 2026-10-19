@@ -220,27 +220,21 @@ describe('Finance workflow', () => {
     expect(inv.id).toBeTruthy();
   });
 
-  it.fails(
-    'KNOWN GAP (no invoice/payment read endpoints; finance disabled in pilot): invoices and payments can be listed and opened (finance UI needs read endpoints)',
-    async () => {
-      expect((await call(w.a.finance, 'GET', '/finance/invoices')).status).toBe(200);
-      expect((await call(w.a.finance, 'GET', '/finance/payments')).status).toBe(200);
-    },
-  );
+  it('invoices and payments can be listed and opened (finance UI needs read endpoints)', async () => {
+    expect((await call(w.a.finance, 'GET', '/finance/invoices')).status).toBe(200);
+    expect((await call(w.a.finance, 'GET', '/finance/payments')).status).toBe(200);
+  });
 
-  it.fails(
-    'KNOWN GAP (no receipts; finance disabled in pilot): a verified payment produces a numbered receipt',
-    async () => {
-      const inv = await invoice(w.a.accountant, w.r.customerA, w.HQ, 10);
-      const p = await call(
-        w.a.accountant,
-        'POST',
-        '/finance/payments',
-        paymentBody(w.r.customerA, w.HQ, 10, [{ invoiceId: inv.id, amount: 10 }]),
-      );
-      await call(w.a.finance, 'POST', `/finance/payments/${p.body.id}/verify`);
-      const receipt = await call(w.a.finance, 'GET', `/finance/payments/${p.body.id}/receipt`);
-      expect(receipt.status).toBe(200);
-    },
-  );
+  it('a verified payment produces a numbered receipt', async () => {
+    const inv = await invoice(w.a.accountant, w.r.customerA, w.HQ, 10);
+    const p = await call(
+      w.a.accountant,
+      'POST',
+      '/finance/payments',
+      paymentBody(w.r.customerA, w.HQ, 10, [{ invoiceId: inv.id, amount: 10 }]),
+    );
+    await call(w.a.finance, 'POST', `/finance/payments/${p.body.id}/verify`);
+    const receipt = await call(w.a.finance, 'GET', `/finance/payments/${p.body.id}/receipt`);
+    expect(receipt.status).toBe(200);
+  });
 });

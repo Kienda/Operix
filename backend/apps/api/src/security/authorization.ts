@@ -246,6 +246,7 @@ const RECORD_REFERENCES: Record<string, string> = {
   managerEmployeeId: 'employees',
   purchaseOrderId: 'purchase-orders',
   documentId: 'documents',
+  siteId: 'geofences',
 };
 const USER_REFERENCES = new Set([
   'assigneeUserId',

@@ -27,6 +27,8 @@ const COMMAND_ONLY = new Set(['quotations']);
 /** A child record lives in its parent's branch. */
 const PARENT_BRANCH: Record<string, [field: string, module: string, required: boolean]> = {
   tasks: ['projectId', 'projects', true],
+  milestones: ['projectId', 'projects', true],
+  'guard-assignments': ['siteId', 'geofences', true],
   projects: ['customerId', 'customers', false],
 };
 const SELF_EDITABLE_TASK_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED'];
@@ -72,6 +74,7 @@ const protectedWorkflows = new Set([
 ]);
 const assignmentPermission: Record<string, string> = {
   tasks: 'tasks.assign',
+  'guard-assignments': 'security.assignments.manage',
   projects: 'projects.manage_members',
   leads: 'leads.assign',
   'work-orders': 'work_orders.assign',
@@ -253,7 +256,17 @@ export class ResourcesService {
       throw new BadRequestException(`Create ${input.module} through its dedicated endpoint`);
     const data = input.data ?? {};
     validateDataState(data);
-    validateRecordSchema(input.module, data);
+    validateRecordSchema(
+      input.module,
+      data,
+      input.module === 'guard-assignments'
+        ? ['userId', 'siteId', 'startsAt', 'endsAt']
+        : input.module === 'milestones'
+          ? ['projectId']
+          : [],
+    );
+    if ((COMMAND_FIELDS[input.module] ?? []).some((key) => key in data))
+      throw new BadRequestException('Command fields cannot be supplied when creating a record');
     validateEmployeeWrite(ctx, input.module, data);
     validateSensitiveWrite(ctx, input.module, data);
     validateStatus(input.status);
@@ -348,6 +361,10 @@ export class ResourcesService {
       )
         throw new BadRequestException('This status is not allowed for this record type');
       const oldData = jsonObject(current.data);
+      if (module === 'expenses' && current.status === 'APPROVED' && input.data)
+        throw new BadRequestException('Approved expense data is immutable');
+      if (module === 'purchase-orders' && current.status !== 'DRAFT' && input.data)
+        throw new BadRequestException('Sent purchase order data is immutable');
       const parentField = PARENT_BRANCH[module]?.[0];
       if (
         module === 'tasks' &&
@@ -393,6 +410,8 @@ export class ResourcesService {
       // Merge, so submitting a visible employee profile cannot erase hidden fields
       // and omitting a project gate cannot silently remove it.
       const data = { ...oldData, ...input.data };
+      if (module === 'guard-assignments')
+        validateRecordSchema(module, data, ['userId', 'siteId', 'startsAt', 'endsAt']);
       if (input.data) await validateRecordData(tx, ctx, module, data, current.branchId);
       const record = await tx.businessRecord.update({
         where: { id },

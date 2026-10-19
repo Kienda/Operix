@@ -4,6 +4,7 @@ import {
   call,
   createActor,
   fix,
+  uid,
   writeEvidence,
   type Actor,
   type World,
@@ -11,6 +12,7 @@ import {
 
 /** Employee/guard attendance and security operations (GN site with a geofence). */
 let w: World;
+let siteId: string, patrolId: string, checkpointId: string;
 beforeAll(async () => {
   w = await buildWorld();
   const fence = await call(w.a.supervisor, 'POST', '/records', {
@@ -21,6 +23,7 @@ beforeAll(async () => {
     data: { latitude: 9.5092, longitude: -13.7122, radiusMeters: 150 },
   });
   if (fence.status !== 201) throw new Error(JSON.stringify(fence.body));
+  siteId = fence.body.id;
 });
 
 describe.sequential('Attendance: check-in → check-out → supervisor review', () => {
@@ -55,26 +58,20 @@ describe.sequential('Attendance: check-in → check-out → supervisor review', 
     expect(res.body.data.flagReason).toMatch(/Outside/);
     shift = res.body.id;
   });
-  it.fails(
-    'KNOWN GAP (ATT-01 open; attendance disabled in pilot): a pending shift cannot be checked out twice (ATT-01)',
-    async () => {
-      expect(
-        (await call(w.a.guard, 'POST', `/attendance/${shift}/check-out`, fix(10))).status,
-      ).toBe(201);
-      expect(
-        (await call(w.a.guard, 'POST', `/attendance/${shift}/check-out`, fix(10))).status,
-      ).toBe(400);
-    },
-  );
-  it.fails(
-    'KNOWN GAP (ATT-01 open; attendance disabled in pilot): a checked-out shift awaiting review does not block the next check-in (ATT-01)',
-    async () => {
-      const next = await call(w.a.guard, 'POST', '/attendance/check-in', fix(10));
-      expect(next.status).toBe(201);
-      if (next.status === 201)
-        await call(w.a.guard, 'POST', `/attendance/${next.body.id}/check-out`, fix(10));
-    },
-  );
+  it('a pending shift cannot be checked out twice (ATT-01)', async () => {
+    expect((await call(w.a.guard, 'POST', `/attendance/${shift}/check-out`, fix(10))).status).toBe(
+      201,
+    );
+    expect((await call(w.a.guard, 'POST', `/attendance/${shift}/check-out`, fix(10))).status).toBe(
+      400,
+    );
+  });
+  it('a checked-out shift awaiting review does not block the next check-in (ATT-01)', async () => {
+    const next = await call(w.a.guard, 'POST', '/attendance/check-in', fix(10));
+    expect(next.status).toBe(201);
+    if (next.status === 201)
+      await call(w.a.guard, 'POST', `/attendance/${next.body.id}/check-out`, fix(10));
+  });
   it('employees cannot approve; the supervisor of the branch can', async () => {
     expect((await call(w.a.employee, 'POST', `/attendance/${shift}/approve`)).status).toBe(403);
     const ok = await call(w.a.supervisor, 'POST', `/attendance/${shift}/approve`);
@@ -108,26 +105,26 @@ describe('Security operations: site → patrol → incident → supervisor revie
     guard2 = await createActor(w.ght, 'security_guard', { alias: 'guard2sec', branches: ['GN'] });
   });
   it('the supervisor configures a patrol route and checkpoint; a guard cannot', async () => {
-    expect(
-      (
-        await call(w.a.supervisor, 'POST', '/records', {
-          module: 'patrols',
-          type: 'route',
-          name: 'Night perimeter',
-          branchId: w.GN,
-        })
-      ).status,
-    ).toBe(201);
-    expect(
-      (
-        await call(w.a.supervisor, 'POST', '/records', {
-          module: 'checkpoints',
-          type: 'checkpoint',
-          name: 'Gate A',
-          branchId: w.GN,
-        })
-      ).status,
-    ).toBe(201);
+    const checkpoint = await call(w.a.supervisor, 'POST', '/records', {
+      module: 'checkpoints',
+      type: 'checkpoint',
+      name: 'Gate A',
+      branchId: w.GN,
+      status: 'ACTIVE',
+      data: { siteId },
+    });
+    expect(checkpoint.status).toBe(201);
+    checkpointId = checkpoint.body.id;
+    const patrol = await call(w.a.supervisor, 'POST', '/records', {
+      module: 'patrols',
+      type: 'route',
+      name: 'Night perimeter',
+      branchId: w.GN,
+      status: 'ACTIVE',
+      data: { siteId, checkpointIds: [checkpointId] },
+    });
+    expect(patrol.status).toBe(201);
+    patrolId = patrol.body.id;
     expect(
       (
         await call(w.a.guard, 'POST', '/records', {
@@ -171,25 +168,32 @@ describe('Security operations: site → patrol → incident → supervisor revie
     expect(review.status).toBe(200);
     expect((await call(guard2, 'GET', `/records/incidents/${inc.body.id}`)).status).toBe(404);
   });
-  it.fails(
-    'KNOWN GAP (no site/shift assignment model): a guard can be assigned to a site and shift (assignment model)',
-    async () => {
-      const res = await call(w.a.supervisor, 'POST', '/records', {
-        module: 'guard-assignments',
-        type: 'assignment',
-        name: 'Guard @ Kaloum',
-        branchId: w.GN,
-        data: { userId: w.a.guard.userId },
-      });
-      expect(res.status).toBe(201);
-    },
-  );
-  it.fails(
-    'KNOWN GAP (no checkpoint scan command): a guard can record a checkpoint scan during a patrol',
-    async () => {
-      expect(
-        (await call(w.a.guard, 'POST', '/security/patrols/scan', { checkpoint: 'Gate A' })).status,
-      ).toBe(201);
-    },
-  );
+  it('a guard can be assigned to a site and shift (assignment model)', async () => {
+    const res = await call(w.a.supervisor, 'POST', '/records', {
+      module: 'guard-assignments',
+      type: 'assignment',
+      name: 'Guard @ Kaloum',
+      branchId: w.GN,
+      status: 'ACTIVE',
+      data: {
+        userId: w.a.guard.userId,
+        siteId,
+        startsAt: new Date(Date.now() - 60_000).toISOString(),
+        endsAt: new Date(Date.now() + 3_600_000).toISOString(),
+      },
+    });
+    expect(res.status).toBe(201);
+  });
+  it('a guard can record a checkpoint scan during a patrol', async () => {
+    const body = { checkpointId, patrolId, idempotencyKey: uid() };
+    const first = await call(w.a.guard, 'POST', '/security/patrols/scan', body);
+    expect(first.status).toBe(201);
+    expect((await call(w.a.guard, 'POST', '/security/patrols/scan', body)).body.id).toBe(
+      first.body.id,
+    );
+    expect(
+      (await call(guard2, 'POST', '/security/patrols/scan', { ...body, idempotencyKey: uid() }))
+        .status,
+    ).toBe(403);
+  });
 });

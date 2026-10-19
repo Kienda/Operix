@@ -18,6 +18,13 @@ import { AdminController } from './platform/admin.controller';
 import { SubscriptionsController } from './platform/subscriptions.controller';
 import { WorkspaceController } from './platform/workspace.controller';
 import { MailModule } from './platform/mail.service';
+import { PortalController } from './workflows/portal.controller';
+import { LeadConversionController } from './workflows/lead-conversion.controller';
+import { ExpenseApprovalController } from './workflows/expense-approval.controller';
+import { ProcurementApprovalController } from './workflows/procurement-approval.controller';
+import { ContractExecutionController } from './workflows/contract-execution.controller';
+import { GoodsReceivingController } from './workflows/goods-receiving.controller';
+import { PatrolScansController } from './workflows/patrol-scans.controller';
 import { config } from './platform/config';
 
 @Module({
@@ -38,6 +45,13 @@ import { config } from './platform/config';
     ProjectsModule,
   ],
   controllers: [
+    PortalController,
+    LeadConversionController,
+    ExpenseApprovalController,
+    ProcurementApprovalController,
+    ContractExecutionController,
+    GoodsReceivingController,
+    PatrolScansController,
     HealthController,
     AdminController,
     SubscriptionsController,

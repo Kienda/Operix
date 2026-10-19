@@ -68,6 +68,20 @@ export class InventoryController {
   constructor(private readonly db: DatabaseService) {}
 
   @RequirePermissions('inventory.view')
+  @Get('items/:id/movements')
+  async movements(@Param('id', ParseUUIDPipe) id: string, @Req() r: AuthenticatedRequest) {
+    const item = await this.db.inventoryItem.findFirst({
+      where: { AND: [inventoryWhere(r.auth), { id }] },
+    });
+    if (!item) throw new NotFoundException('Inventory item not found');
+    return this.db.inventoryMovement.findMany({
+      where: { organizationId: r.auth.organizationId, itemId: id },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 100,
+    });
+  }
+
+  @RequirePermissions('inventory.view')
   @Get('items')
   list(@Req() r: AuthenticatedRequest, @Query('lowStock') low?: string) {
     return this.db.inventoryItem.findMany({
@@ -105,98 +119,13 @@ export class InventoryController {
     @Body() b: MovementDto,
     @Req() r: AuthenticatedRequest,
   ) {
-    if (b.type === 'TRANSFER' || b.type === 'RESERVATION')
+    if (b.type === 'PURCHASE_RECEIPT' && b.referenceType === 'purchase-order') {
+      requirePermissions(r.auth, 'inventory.receive');
       throw new BadRequestException(
-        'This movement requires a dedicated paired-transfer or reservation workflow',
+        'Receive a purchase order through its dedicated receiving command',
       );
-    const permission = movementPermissions[b.type];
-    if (!permission) throw new BadRequestException('Unsupported movement');
-    requirePermissions(r.auth, permission);
-    const quantity = decimal(b.quantity, 4, true, b.type === 'ADJUSTMENT');
-    if (b.type === 'ADJUSTMENT' && (!b.notes || b.notes.trim().length < 10))
-      throw new BadRequestException('An adjustment requires a meaningful reason');
-    if (
-      !!b.referenceType !== !!b.referenceId ||
-      (b.referenceType && !referenceModules[b.referenceType])
-    )
-      throw new BadRequestException('Invalid stock reference type/id');
-    const execute = () =>
-      serializable(this.db, async (tx) => {
-        const item = await tx.inventoryItem.findFirst({
-          where: { AND: [inventoryWhere(r.auth), { id }] },
-        });
-        if (!item) throw new NotFoundException('Inventory item not found');
-        if (b.referenceId) {
-          const reference = await requireRecordReference(
-            tx,
-            r.auth,
-            referenceModules[b.referenceType!],
-            b.referenceId,
-          );
-          if (reference.branchId !== item.branchId)
-            throw new BadRequestException('Stock reference belongs to another branch');
-        }
-        const existing = await tx.inventoryMovement.findUnique({
-          where: {
-            organizationId_itemId_idempotencyKey: {
-              organizationId: r.auth.organizationId,
-              itemId: id,
-              idempotencyKey: b.idempotencyKey,
-            },
-          },
-        });
-        if (existing) {
-          if (
-            existing.type !== b.type ||
-            !existing.quantity.equals(quantity) ||
-            existing.referenceId !== (b.referenceId ?? null) ||
-            existing.referenceType !== (b.referenceType ?? null) ||
-            existing.notes !== (b.notes ?? null)
-          )
-            throw new ConflictException('Idempotency key already used for another movement');
-          return existing;
-        }
-        const history = await tx.inventoryMovement.groupBy({
-          by: ['type'],
-          where: { organizationId: r.auth.organizationId, itemId: id },
-          _sum: { quantity: true },
-          _count: true,
-        });
-        if (history.some((m) => m.type === 'TRANSFER' || m.type === 'RESERVATION'))
-          throw new ConflictException('Legacy movements require reconciliation');
-        const authoritative = history.reduce(
-          (sum, m) =>
-            additions.has(m.type) ? sum.add(m._sum.quantity ?? 0) : sum.sub(m._sum.quantity ?? 0),
-          item.openingQuantity,
-        );
-        if (!authoritative.equals(item.quantity))
-          throw new ConflictException('Stock balance requires reconciliation before posting');
-        if (
-          b.type === 'INITIAL' &&
-          (history.length || !item.quantity.isZero() || !item.openingQuantity.isZero())
-        )
-          throw new BadRequestException('Opening stock has already been established');
-        const delta = additions.has(b.type) ? quantity : quantity.negated();
-        const next = authoritative.add(delta);
-        if (next.lt(item.reserved))
-          throw new BadRequestException('Insufficient available inventory');
-        decimal(next.toFixed(), 4);
-        await tx.inventoryItem.update({ where: { id }, data: { quantity: next } });
-        return tx.inventoryMovement.create({
-          data: {
-            organizationId: r.auth.organizationId,
-            itemId: id,
-            type: b.type,
-            quantity,
-            balanceAfter: next,
-            idempotencyKey: b.idempotencyKey,
-            referenceType: b.referenceType,
-            referenceId: b.referenceId,
-            notes: b.notes,
-            createdBy: r.auth.userId,
-          },
-        });
-      });
+    }
+    const execute = () => serializable(this.db, (tx) => postStockMovement(tx, r, id, b));
     try {
       return await execute();
     } catch (e) {
@@ -204,4 +133,102 @@ export class InventoryController {
       throw e;
     }
   }
+}
+
+/** Shared atomic posting path; procurement uses the same permission, reconciliation and balance checks. */
+export async function postStockMovement(
+  tx: Prisma.TransactionClient,
+  r: AuthenticatedRequest,
+  id: string,
+  b: MovementDto,
+) {
+  if (b.type === 'TRANSFER' || b.type === 'RESERVATION')
+    throw new BadRequestException(
+      'This movement requires a dedicated paired-transfer or reservation workflow',
+    );
+  const permission = movementPermissions[b.type];
+  if (!permission) throw new BadRequestException('Unsupported movement');
+  requirePermissions(r.auth, permission);
+  const quantity = decimal(b.quantity, 4, true, b.type === 'ADJUSTMENT');
+  if (b.type === 'ADJUSTMENT' && (!b.notes || b.notes.trim().length < 10))
+    throw new BadRequestException('An adjustment requires a meaningful reason');
+  if (
+    !!b.referenceType !== !!b.referenceId ||
+    (b.referenceType && !referenceModules[b.referenceType])
+  )
+    throw new BadRequestException('Invalid stock reference type/id');
+
+  const item = await tx.inventoryItem.findFirst({
+    where: { AND: [inventoryWhere(r.auth), { id }] },
+  });
+  if (!item) throw new NotFoundException('Inventory item not found');
+  if (b.referenceId) {
+    const reference = await requireRecordReference(
+      tx,
+      r.auth,
+      referenceModules[b.referenceType!],
+      b.referenceId,
+    );
+    if (reference.branchId !== item.branchId)
+      throw new BadRequestException('Stock reference belongs to another branch');
+  }
+  const existing = await tx.inventoryMovement.findUnique({
+    where: {
+      organizationId_itemId_idempotencyKey: {
+        organizationId: r.auth.organizationId,
+        itemId: id,
+        idempotencyKey: b.idempotencyKey,
+      },
+    },
+  });
+  if (existing) {
+    if (
+      existing.type !== b.type ||
+      !existing.quantity.equals(quantity) ||
+      existing.referenceId !== (b.referenceId ?? null) ||
+      existing.referenceType !== (b.referenceType ?? null) ||
+      existing.notes !== (b.notes ?? null)
+    )
+      throw new ConflictException('Idempotency key already used for another movement');
+    return existing;
+  }
+  const history = await tx.inventoryMovement.groupBy({
+    by: ['type'],
+    where: { organizationId: r.auth.organizationId, itemId: id },
+    _sum: { quantity: true },
+    _count: true,
+  });
+  if (history.some((m) => m.type === 'TRANSFER' || m.type === 'RESERVATION'))
+    throw new ConflictException('Legacy movements require reconciliation');
+  const authoritative = history.reduce(
+    (sum, m) =>
+      additions.has(m.type) ? sum.add(m._sum.quantity ?? 0) : sum.sub(m._sum.quantity ?? 0),
+    item.openingQuantity,
+  );
+  if (!authoritative.equals(item.quantity))
+    throw new ConflictException('Stock balance requires reconciliation before posting');
+  if (
+    b.type === 'INITIAL' &&
+    (history.length || !item.quantity.isZero() || !item.openingQuantity.isZero())
+  )
+    throw new BadRequestException('Opening stock has already been established');
+  const delta = additions.has(b.type) ? quantity : quantity.negated();
+  const next = authoritative.add(delta);
+  if (next.lt(item.reserved)) throw new BadRequestException('Insufficient available inventory');
+  decimal(next.toFixed(), 4);
+  await tx.inventoryItem.update({ where: { id }, data: { quantity: next } });
+  return tx.inventoryMovement.create({
+    data: {
+      organizationId: r.auth.organizationId,
+      itemId: id,
+      type: b.type,
+      quantity,
+      balanceAfter: next,
+      idempotencyKey: b.idempotencyKey,
+      referenceType: b.referenceType,
+      referenceId: b.referenceId,
+      notes: b.notes,
+      createdBy: r.auth.userId,
+    },
+  });
 }

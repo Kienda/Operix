@@ -97,10 +97,10 @@ type BranchSpec = {
 };
 
 let modulesReady: Promise<unknown> | undefined;
-/** Mirrors the main seed: every tenant module except the platform and portal planes. */
+/** Exercise every tenant module, including the opt-in customer portal. */
 function ensureModules() {
   return (modulesReady ??= Promise.all(
-    MODULE_DEFINITIONS.filter((m) => m.key !== 'platform' && m.key !== 'portal').map((m) =>
+    MODULE_DEFINITIONS.filter((m) => m.key !== 'platform').map((m) =>
       db().module.upsert({
         where: { key: m.key },
         update: {},
