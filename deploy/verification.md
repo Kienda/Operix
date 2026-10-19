@@ -1,10 +1,11 @@
 # Deployment verification and release gates
 
-Local verification on **October 17, 2026 (America/New_York)**. Repository remote is
-`https://github.com/Kienda/Operix.git`, local HEAD `04448b9`; implementation is an uncommitted local change.
-The existing browser test file and generated browser artifacts were already modified on entry. They have
-not been reset or represented as part of the deployment implementation. Running browser tests regenerated
-their normal reports. No commit, push, GitHub setting, AWS resource, DNS or live host configuration was changed.
+Local verification first run **October 17, 2026**, re-run in full on **October 18, 2026 (America/New_York)**
+after the GHT pilot remediation. Repository remote is `https://github.com/Kienda/Operix.git`, local HEAD
+`08684c5`; implementation is an uncommitted local change. Pilot-level evidence and the readiness verdict are in
+[docs/pilot/TEST_EVIDENCE.md](../docs/pilot/TEST_EVIDENCE.md) and
+[docs/pilot/READINESS_REPORT.md](../docs/pilot/READINESS_REPORT.md).
+No commit, push, GitHub setting, AWS resource, DNS or live host configuration was changed.
 
 ## Investigation
 
@@ -19,7 +20,7 @@ The active API uses `platform/config.ts`, not the larger planned `@operix/config
 injected. Readiness is `/api/v1/health` (database query); `/api/v1/health/live` is process liveness. Request JSON
 logging and exception sanitization are implemented, but CloudWatch collection is not installed by this work.
 
-## Results
+## Results (October 18)
 
 | Check | Result |
 | --- | --- |
@@ -28,21 +29,21 @@ logging and exception sanitization are implemented, but CloudWatch collection is
 | Backend `pnpm test --force` | PASS, 95 tests: 44 permissions, 51 API unit tests; some packages have no tests |
 | Backend `pnpm typecheck --force` | PASS across workspace |
 | Backend `pnpm build --force` | PASS, all seven packages |
-| `pnpm test:e2e` | PASS, 25 P0 HTTP/PostgreSQL regressions + 2 migration rehearsals |
+| `pnpm test:e2e` (`test:p0`) | PASS, 25 P0 HTTP/PostgreSQL regressions + 2 migration rehearsals |
 | `pnpm --filter @operix/api test:pilot` | PASS, 31 API/SMTP/pilot cases |
-| `pnpm --filter @operix/api test:qa` | FAIL: 10 suites fail in shared fixture setup, 148 tests skipped |
-| `npm run test:browser` | FAIL: 4 pass, 1 fails (`nav is not a function`), 4 do not run |
-| `pnpm lint` | 0 tasks; not lint coverage |
-| `pnpm format:check` | FAIL, broad existing formatting differences; no unrelated mass reformat |
-| Frontend npm registry audit | PASS, 0 advisories at verification time |
-| Backend pnpm registry audit | FAIL, 4 critical / 18 high / 12 moderate / 1 low |
+| `pnpm --filter @operix/api test:qa` | PASS, 10 suites: 126 pass, 22 `it.fails` documented known gaps (none in an enabled pilot workflow) |
+| `npm run test:browser` | PASS, 9/9 Playwright walkthrough steps, no console errors or failed requests |
+| `pnpm lint` | 0 tasks; not lint coverage (open item) |
+| `pnpm format:check` | PASS |
+| Frontend npm registry audit | PASS, 0 advisories |
+| Backend pnpm registry audit | PASS, 0 advisories (patch-level pins, same majors) |
 | Deployment contract tests | PASS, 5: Compose isolation/resources, secret scoping, placeholder/reuse rejection, credential-rotation fingerprint, SSM/IAM scope |
-| Actionlint 1.7.7 | PASS for the new workflow |
-| ShellCheck 0.10.0 and Linux Bash syntax | PASS after fixing export/assignment warning |
-| Four Linux Docker image targets | PASS: API, worker, migration, web; Linux Prisma client resolution checked during build |
-| Actual Compose image smoke | PASS: all five migrations, health/readiness, SPA deep link, same-origin API, nonprivileged application role, zero seeded users/organizations, worker disabled |
-| CloudFormation `cfn-lint` and Compose YAML parsing | PASS locally; no CloudFormation API call or stack deployment |
-| Trivy read-only archive image scans | FAIL release thresholds for all four images; counts below |
+| Actionlint 1.7.7 | PASS for both workflows |
+| ShellCheck 0.10.0 `-S warning` (as CI) | PASS for all deploy and docker scripts, including the new backup and restore-rehearsal scripts |
+| Four Linux Docker image targets | PASS: API, worker, migration on distroless Node 24 (Debian 13); web on nginx 1.30 Alpine |
+| Actual Compose image smoke | PASS: all five migrations, privilege hardening, health/readiness, SPA deep link, same-origin API, nonprivileged application role, append-only audit log, security headers, zero seeded users/organizations, production bootstrap dry run, worker disabled |
+| CloudFormation `cfn-lint` and Compose YAML parsing | PASS locally (Oct 17); no CloudFormation API call or stack deployment |
+| Trivy 0.61.1 read-only archive image scans | PASS: 0 HIGH / 0 CRITICAL on all four images |
 | Live AWS, ECR push, SSM execution, TLS/DNS, Nginx, staff acceptance | NOT RUN; requires approval and missing account/instance/proxy/provider configuration |
 
 Initial sandbox cache permissions blocked backend test writes; the authorized local rerun passed. Test
@@ -50,29 +51,23 @@ services were created under `operix-deploy-tests` on loopback ports 55439/11025/
 Operix container/data was used for fixtures. The P0 harness was corrected to use `P0_TEST_DATABASE_URL` for
 its administrative client too, and to support a clean checkout without a development `.env` file.
 
-The broader QA fixture sends `projectManagerUserId` to the current customers schema, which rejects it with
-HTTP 400. This is not evidence that the 148 intended cases pass. The browser suite fails at a test-helper
-invocation, not a successfully completed walkthrough. Resolve these test/contract mismatches and rerun
-without weakening access expectations before permitting staff access. They are left visible as CI failures.
+October 17 failures and how they were resolved (no access expectation was weakened):
 
-Critical advisories include production `proxy-addr` IP spoofing and development `vitest`/`tinypool` issues;
-high advisories include `multer`, `fast-uri`, `js-yaml` and other transitive dependencies. Do a focused,
-compatibility-reviewed lockfile update and rerun all gates; no blanket major dependency upgrade or audit
-suppression was performed. CI blocks publication on high/critical registry or image findings.
+- **QA suite** failed in shared fixture setup (customer schema rejected a fixture field). Fixtures were
+  and the harness were updated to the current API contracts (typed record schemas, command-only
+  quotations); all 10 suites now run. Intended-but-missing behaviour is kept as
+  `it.fails('KNOWN GAP …')`, which turns red when implemented.
+- **Browser suite** failed at a test helper. Fixed; the full 9-step walkthrough passes.
+- **Registry advisories** (backend 4 critical / 18 high / 12 moderate / 1 low, e.g. `proxy-addr`, `multer`,
+  `fast-uri`, `js-yaml`, `vitest`): focused patch-level pins within the same majors; no audit suppression.
+- **Formatting**: repository reformatted with the project's Prettier config.
+- **Image scans** (Oct 17: API 71/5, worker 67/4, migrate 110/10, web 65/3 high/critical package findings):
+  most were Debian 12 OS packages with no fix and the npm bundled in the Node base image. Runtime stages now
+  use `gcr.io/distroless/nodejs24-debian13:nonroot` (no shell, package manager or OS utilities; Prisma and
+  OpenSSL 3 verified by the smoke test) and `nginxinc/nginx-unprivileged:1.30-alpine` (the 1.28 line is no
+  longer patched upstream) with `apk upgrade --available` at build. Result: 0/0 on all four images.
 
-Image scans used Trivy 0.61.1 with a newly downloaded vulnerability database, scanning read-only `docker save`
-archives without mounting the Docker socket. High/critical **package findings** (not deduplicated CVE totals):
-
-| Image | High | Critical |
-| --- | ---: | ---: |
-| API | 71 | 5 |
-| Worker (disabled) | 67 | 4 |
-| Migration tooling | 110 | 10 |
-| Web | 65 | 3 |
-
-These include OS/base-image packages as well as application/tool dependencies. Review fixed versions,
-refresh/pin patched base images and lockfiles, and rerun scans; successful build/startup does not waive
-vulnerability gates. Local reports remain under ignored `tmp/deployment-*-audit.*` for inspection.
+Base tags still move. CI rescans every build; pin the resolved digests for each promoted release.
 Docker smoke testing exposed and corrected Compose tmpfs list quoting and gateway ingress networking;
 the final successful run used a separate ordinary gateway bridge with loopback-only port publishing.
 Its disposable containers/networks/volumes were removed after assertions. The earlier static config check

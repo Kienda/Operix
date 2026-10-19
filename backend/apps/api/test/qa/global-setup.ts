@@ -22,7 +22,8 @@ async function freePort(): Promise<number> {
 async function waitForHealth(url: string, child: ChildProcess, output: () => string) {
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {
-    if (child.exitCode !== null) throw new Error(`QA API exited early (${child.exitCode}):\n${output()}`);
+    if (child.exitCode !== null)
+      throw new Error(`QA API exited early (${child.exitCode}):\n${output()}`);
     try {
       const response = await fetch(`${url}/health`, { signal: AbortSignal.timeout(2_000) });
       const body = (await response.json()) as { database?: string };
@@ -44,7 +45,8 @@ async function waitForHealth(url: string, child: ChildProcess, output: () => str
 export default async function setup({ provide }: GlobalSetupContext) {
   const base = assertSafeDatabase();
   const entry = resolve(API_ROOT, '.tmp-build/main.js');
-  if (!existsSync(entry)) throw new Error('Compiled API not found; run `pnpm --filter @operix/api test:qa`');
+  if (!existsSync(entry))
+    throw new Error('Compiled API not found; run `pnpm --filter @operix/api test:qa`');
 
   const schema = `qa_test_${randomUUID().replaceAll('-', '')}`;
   const url = new URL(base.toString());
@@ -68,11 +70,15 @@ export default async function setup({ provide }: GlobalSetupContext) {
 
   try {
     const requireDb = createRequire(resolve(BACKEND_ROOT, 'packages/database/package.json'));
-    execFileSync(process.execPath, [requireDb.resolve('prisma/build/index.js'), 'migrate', 'deploy'], {
-      cwd: resolve(BACKEND_ROOT, 'packages/database'),
-      env: { ...process.env, DATABASE_URL: url.toString() },
-      stdio: 'pipe',
-    });
+    execFileSync(
+      process.execPath,
+      [requireDb.resolve('prisma/build/index.js'), 'migrate', 'deploy'],
+      {
+        cwd: resolve(BACKEND_ROOT, 'packages/database'),
+        env: { ...process.env, DATABASE_URL: url.toString() },
+        stdio: 'pipe',
+      },
+    );
 
     const port = await freePort();
     let log = '';
@@ -81,8 +87,12 @@ export default async function setup({ provide }: GlobalSetupContext) {
       env: { ...process.env, DATABASE_URL: url.toString(), PORT: String(port), NODE_ENV: 'test' },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    child.stdout?.on('data', (chunk) => { log = (log + chunk).slice(-8_000); });
-    child.stderr?.on('data', (chunk) => { log = (log + chunk).slice(-8_000); });
+    child.stdout?.on('data', (chunk) => {
+      log = (log + chunk).slice(-8_000);
+    });
+    child.stderr?.on('data', (chunk) => {
+      log = (log + chunk).slice(-8_000);
+    });
     const apiUrl = `http://127.0.0.1:${port}/api/v1`;
     await waitForHealth(apiUrl, child, () => log);
 

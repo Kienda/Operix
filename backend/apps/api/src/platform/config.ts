@@ -38,11 +38,14 @@ const list = (value?: string) =>
 const int = (value: string | undefined, fallback: number, name: string, min = 0) => {
   if (value === undefined || value === '') return fallback;
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < min) throw new Error(`${name} must be an integer ≥ ${min}`);
+  if (!Number.isInteger(parsed) || parsed < min)
+    throw new Error(`${name} must be an integer ≥ ${min}`);
   return parsed;
 };
 const bool = (value: string | undefined, fallback: boolean) =>
-  value === undefined || value === '' ? fallback : ['1', 'true', 'yes'].includes(value.toLowerCase());
+  value === undefined || value === ''
+    ? fallback
+    : ['1', 'true', 'yes'].includes(value.toLowerCase());
 
 let cached: ApiConfig | undefined;
 
@@ -52,7 +55,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
 
   let jwtSecret = env.JWT_ACCESS_SECRET ?? '';
   if (!jwtSecret || jwtSecret.length < 32 || PLACEHOLDERS.some((p) => p.test(jwtSecret))) {
-    if (production) errors.push('JWT_ACCESS_SECRET must be a random value of at least 32 characters');
+    if (production)
+      errors.push('JWT_ACCESS_SECRET must be a random value of at least 32 characters');
     // Development without a secret: a per-process random key, never a known constant.
     else jwtSecret = jwtSecret.length >= 32 ? jwtSecret : randomBytes(48).toString('hex');
   }
@@ -66,10 +70,22 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     errors.push('CORS_ORIGINS must only contain https:// origins in production');
 
   const driver = (env.MAIL_DRIVER ?? (production ? 'smtp' : 'log')) as ApiConfig['mail']['driver'];
-  if (!['smtp', 'log', 'disabled'].includes(driver)) errors.push('MAIL_DRIVER must be smtp, log or disabled');
+  if (!['smtp', 'log', 'disabled'].includes(driver))
+    errors.push('MAIL_DRIVER must be smtp, log or disabled');
   if (production && driver !== 'smtp')
     errors.push('MAIL_DRIVER=smtp is required in production (invitations and resets are emailed)');
-  if (driver === 'smtp' && !env.SMTP_HOST) errors.push('SMTP_HOST is required for MAIL_DRIVER=smtp');
+  if (driver === 'smtp' && !env.SMTP_HOST)
+    errors.push('SMTP_HOST is required for MAIL_DRIVER=smtp');
+  if (driver === 'smtp' && production) {
+    for (const key of ['SMTP_USER', 'SMTP_PASSWORD', 'MAIL_FROM'])
+      if (!env[key]?.trim()) errors.push(`${key} is required for SMTP`);
+  }
+  if (
+    driver === 'smtp' &&
+    env.SMTP_HOST === 'smtp.gmail.com' &&
+    ((env.SMTP_PORT ?? '587') !== '587' || bool(env.SMTP_SECURE, false))
+  )
+    errors.push('Google SMTP requires port 587 and SMTP_SECURE=false for STARTTLS');
 
   let config: ApiConfig | undefined;
   try {
@@ -94,7 +110,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
         password: env.SMTP_PASSWORD || undefined,
       },
       rateLimit: {
-        windowMs: int(env.AUTH_RATE_LIMIT_WINDOW_SECONDS, 900, 'AUTH_RATE_LIMIT_WINDOW_SECONDS', 1) * 1000,
+        windowMs:
+          int(env.AUTH_RATE_LIMIT_WINDOW_SECONDS, 900, 'AUTH_RATE_LIMIT_WINDOW_SECONDS', 1) * 1000,
         perIdentity: int(env.AUTH_RATE_LIMIT_PER_IDENTITY, 10, 'AUTH_RATE_LIMIT_PER_IDENTITY', 1),
         perIp: int(env.AUTH_RATE_LIMIT_PER_IP, 300, 'AUTH_RATE_LIMIT_PER_IP', 1),
       },

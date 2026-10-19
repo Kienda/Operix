@@ -29,9 +29,19 @@ import { DatabaseService } from './database.module';
 import type { AuthenticatedRequest, AuthContext } from '../security/request-context';
 import { RequirePermissions } from '../security/permissions.decorator';
 import { AuthService } from '../auth/auth.service';
-import { can, isOrganizationWide, membershipWhere, requireOrganizationWide } from '../security/authorization';
+import {
+  can,
+  isOrganizationWide,
+  membershipWhere,
+  requireOrganizationWide,
+} from '../security/authorization';
 import { serializable } from './transaction';
-import { assertDelegable, assignableRoleKeys, canDelegateRole, OWNER_ROLE_KEYS } from './delegation';
+import {
+  assertDelegable,
+  assignableRoleKeys,
+  canDelegateRole,
+  OWNER_ROLE_KEYS,
+} from './delegation';
 
 const CURRENCIES = ['USD', 'EUR', 'GNF'];
 const validTimezone = (tz: string) => {
@@ -115,10 +125,19 @@ export class AdminController {
     if (body.timezone && !validTimezone(body.timezone))
       throw new BadRequestException('Unknown timezone');
     return serializable(this.db, async (tx) => {
-      const before = await tx.organization.findUniqueOrThrow({ where: { id: r.auth.organizationId } });
-      const updated = await tx.organization.update({ where: { id: r.auth.organizationId }, data: body });
+      const before = await tx.organization.findUniqueOrThrow({
+        where: { id: r.auth.organizationId },
+      });
+      const updated = await tx.organization.update({
+        where: { id: r.auth.organizationId },
+        data: body,
+      });
       await this.audit(tx, r.auth, 'ORGANIZATION_UPDATED', 'organization', updated.id, {
-        before: { name: before.name, timezone: before.timezone, defaultCurrency: before.defaultCurrency },
+        before: {
+          name: before.name,
+          timezone: before.timezone,
+          defaultCurrency: before.defaultCurrency,
+        },
         after: body,
       });
       return updated;
@@ -132,7 +151,9 @@ export class AdminController {
     requireOrganizationWide(r.auth);
     if (!validTimezone(b.timezone)) throw new BadRequestException('Unknown timezone');
     return serializable(this.db, async (tx) => {
-      const branch = await tx.branch.create({ data: { ...b, organizationId: r.auth.organizationId } });
+      const branch = await tx.branch.create({
+        data: { ...b, organizationId: r.auth.organizationId },
+      });
       await this.audit(tx, r.auth, 'BRANCH_CREATED', 'branch', branch.id, { after: b });
       return branch;
     });
@@ -160,7 +181,11 @@ export class AdminController {
 
   /** Active colleagues the caller may assign work to (no email, no security fields). */
   @Get('directory') async directory(@Req() r: AuthenticatedRequest) {
-    if (!['tasks.assign', 'projects.manage_members', 'customers.update', 'users.manage'].some((p) => can(r.auth, p)))
+    if (
+      !['tasks.assign', 'projects.manage_members', 'customers.update', 'users.manage'].some((p) =>
+        can(r.auth, p),
+      )
+    )
       throw new ForbiddenException('Insufficient permissions');
     const members = await this.db.organizationUser.findMany({
       where: {
@@ -188,7 +213,10 @@ export class AdminController {
     @Req() r: AuthenticatedRequest,
   ) {
     const [roles, organization] = await Promise.all([
-      this.db.role.findMany({ where: { organizationId: r.auth.organizationId }, orderBy: { name: 'asc' } }),
+      this.db.role.findMany({
+        where: { organizationId: r.auth.organizationId },
+        orderBy: { name: 'asc' },
+      }),
       this.db.organization.findUniqueOrThrow({ where: { id: r.auth.organizationId } }),
     ]);
     const allowed = assignableRoleKeys(organization.settings);
@@ -345,7 +373,8 @@ export class AdminController {
         },
       });
       if (!invitation) throw new NotFoundException('Invitation not found');
-      if (invitation.acceptedAt) throw new BadRequestException('This invitation was already accepted');
+      if (invitation.acceptedAt)
+        throw new BadRequestException('This invitation was already accepted');
       if (!invitation.revokedAt) {
         await tx.invitation.update({ where: { id }, data: { revokedAt: new Date() } });
         await this.audit(tx, r.auth, 'INVITATION_REVOKED', 'invitation', id, {});
@@ -360,7 +389,8 @@ export class AdminController {
       include: { role: true },
     });
     if (!member) throw new NotFoundException('Member not found');
-    if (member.userId === ctx.userId) throw new BadRequestException('You cannot change your own access');
+    if (member.userId === ctx.userId)
+      throw new BadRequestException('You cannot change your own access');
     return member;
   }
 

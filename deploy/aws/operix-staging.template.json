@@ -137,6 +137,34 @@
         ]
       }
     },
+    "TunnelRepository": {
+      "Type": "AWS::ECR::Repository",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "RepositoryName": "operix-tunnel",
+        "ImageTagMutability": "IMMUTABLE",
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true
+        },
+        "EncryptionConfiguration": {
+          "EncryptionType": "AES256"
+        },
+        "LifecyclePolicy": {
+          "LifecyclePolicyText": "{\"rules\":[{\"rulePriority\":1,\"description\":\"Expire untagged build layers only\",\"selection\":{\"tagStatus\":\"untagged\",\"countType\":\"sinceImagePushed\",\"countUnit\":\"days\",\"countNumber\":7},\"action\":{\"type\":\"expire\"}}]}"
+        },
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": "Operix"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
     "ArtifactsBucket": {
       "Type": "AWS::S3::Bucket",
       "DeletionPolicy": "Retain",
@@ -361,6 +389,12 @@
                         "WebRepository",
                         "Arn"
                       ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "TunnelRepository",
+                        "Arn"
+                      ]
                     }
                   ]
                 },
@@ -547,6 +581,12 @@
                 {
                   "Fn::GetAtt": [
                     "WebRepository",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::GetAtt": [
+                    "TunnelRepository",
                     "Arn"
                   ]
                 }

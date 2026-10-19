@@ -16,13 +16,7 @@ export const PILOT_MODULES: readonly ModuleKey[] = [
   MODULE.PROJECTS,
 ];
 
-const ADMIN_CORE = [
-  'organization.view',
-  'users.view',
-  'users.manage',
-  'roles.view',
-  'audit.view',
-];
+const ADMIN_CORE = ['organization.view', 'users.view', 'users.manage', 'roles.view', 'audit.view'];
 const CUSTOMERS_FULL = [
   'customers.view',
   'customers.create',
@@ -119,7 +113,8 @@ export const PILOT_ROLES: readonly PilotRoleDefinition[] = [
   {
     key: 'ght_sales_manager',
     name: 'Sales Manager',
-    description: 'Owns customers and quotations in their branch, including recording customer decisions.',
+    description:
+      'Owns customers and quotations in their branch, including recording customer decisions.',
     dataScope: 'branch',
     permissions: ['organization.view', ...CUSTOMERS_FULL, ...QUOTATIONS_FULL, 'projects.view'],
   },
@@ -141,7 +136,8 @@ export const PILOT_ROLES: readonly PilotRoleDefinition[] = [
   {
     key: 'ght_production',
     name: 'Production',
-    description: 'Sees branch projects and plans/executes production tasks. No pricing or customer financials.',
+    description:
+      'Sees branch projects and plans/executes production tasks. No pricing or customer financials.',
     dataScope: 'branch',
     permissions: [
       'organization.view',

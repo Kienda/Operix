@@ -21,7 +21,11 @@ export class HealthController {
     try {
       await this.db.$queryRaw`SELECT 1`;
     } catch {
-      throw new ServiceUnavailableException({ ...body, status: 'degraded', database: 'unavailable' });
+      throw new ServiceUnavailableException({
+        ...body,
+        status: 'degraded',
+        database: 'unavailable',
+      });
     }
     return { ...body, status: 'ok', database: 'connected' };
   }

@@ -38,7 +38,8 @@ only, not completion of real jobs. API mail uses its SMTP service directly and d
 
 ## Files
 
-- `docker/backend.Dockerfile`: separate API, worker and migration targets; Node 24, pnpm 11.1.3, Linux Prisma generation.
+- `docker/backend.Dockerfile`: separate API, worker and migration targets; Node 24, pnpm 11.1.3, Linux Prisma
+  generation; distroless non-root runtime (no shell: operator commands call `node` directly).
 - `docker/web.Dockerfile`: locked npm build of the **staff pilot**, unprivileged Nginx, same-origin `/api/v1`.
 - `docker/runtime-env.cjs`: reads only the mounted service secret file; no secrets baked into image layers or Vite arguments.
 - `aws/operix-staging.template.json`: reviewable ECR/S3/OIDC/IAM/SSM resources; **do not apply without approval**.
@@ -48,9 +49,10 @@ only, not completion of real jobs. API mail uses its SMTP service directly and d
 
 ## Blockers before enabling AWS jobs
 
-1. Resolve the findings recorded in [verification](verification.md): backend dependency advisories, broader QA
-   fixture failure, browser test failure and existing formatting failures. Lint executes zero tasks and is
-   not meaningful lint coverage; introduce an actual lint baseline before staff access. Do not bypass failed checks.
+1. ~~Resolve the findings recorded in [verification](verification.md)~~ — resolved October 18: 0 registry
+   advisories, QA/browser/format gates pass, 0 HIGH/CRITICAL image findings. Still open: lint executes zero
+   tasks and is not meaningful lint coverage. Do not bypass failed checks. Current verdict and remaining
+   gates: [readiness report](../docs/pilot/READINESS_REPORT.md).
 2. Obtain the account ID and exact EC2 instance ID/instance role. Confirm SSM Agent is online and sufficiently
    recent for ENV_VAR document interpolation. No SSH keys are required by CI. No AWS credentials belong in GitHub secrets.
 3. Inspect the current shared Nginx placement, includes, certificate paths, occupied ports, Docker networks,
@@ -174,6 +176,33 @@ sudo install -m 0600 /dev/null /etc/operix/staging.approved
 All deployment paths/approval files/bootstrap must be root-owned, not writable by application or CI users.
 The release runs as root via SSM; Docker access itself is root-equivalent. Verify EBS encryption and reserve
 host resources before enabling either GitHub switch.
+
+## Selected staging path (October 18 host inspection)
+
+Read-only inspection of `i-0ea991afd785b72e0` found: no host Nginx; ports 80/443 are bound by Tontin's
+own proxy container (`tontin-nginx-1`, single bind-mounted config, not on any shared network); both
+Operix hostnames are proxied by Cloudflare and currently fall into Tontin's default server, which
+redirects them to `app.tontin.net`. Host and docker-edge modes would both require editing Tontin's proxy.
+
+Staging therefore uses **`PROXY_MODE=tunnel`** (`compose.tunnel.yml`): a `cloudflared` connector built
+from `docker/tunnel.Dockerfile` (static binary on distroless, digest-pinned, scanned like the other
+images) joins only the gateway's `ingress` network, dials out to Cloudflare and publishes no port. TLS
+terminates at Cloudflare; a Cloudflare Access policy restricts both hostnames to approved testers. The
+connector token is the optional `CLOUDFLARE_TUNNEL_TOKEN` field of the runtime secret. Tontin's
+containers, proxy, certificates and networks are not touched. In the tunnel, route both public
+hostnames to `http://web:8080`.
+
+Instance metadata: the instance requires IMDSv2 but allows hop limit 2, so containers can reach the
+shared instance role. `ingress`/`egress` use fixed bridge names (`opx-ingress`, `opx-egress`) and
+`deploy.sh` plus `systemd/operix-imds-block.service` insert DOCKER-USER rules dropping their traffic to
+`169.254.169.254`. Tontin's containers are not covered; lowering the hop limit to 1 protects both but
+must first be checked against Tontin.
+
+The root EBS volume is **not encrypted**. Acceptable only for synthetic staging data; encrypting it needs
+a snapshot/replace-root maintenance window shared with Tontin and is a blocker for real staff data.
+
+Host preparation is rendered by `scripts/render-host-bootstrap.py` (stack outputs → `staging.env`,
+receiver, metadata unit, AWS CLI snap, approval sentinel) and run via SSM after approval.
 
 ## Routing while preserving Tontin
 

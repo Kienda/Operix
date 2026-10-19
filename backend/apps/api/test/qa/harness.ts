@@ -88,7 +88,13 @@ export interface Tenant {
   branches: Record<string, string>;
   roles: Map<string, string>;
 }
-type BranchSpec = { code: string; name: string; country: string; currency: string; timezone: string };
+type BranchSpec = {
+  code: string;
+  name: string;
+  country: string;
+  currency: string;
+  timezone: string;
+};
 
 let modulesReady: Promise<unknown> | undefined;
 /** Mirrors the main seed: every tenant module except the platform and portal planes. */
@@ -108,7 +114,13 @@ export async function createTenant(label: string, branches: BranchSpec[]): Promi
   await ensureModules();
   const slug = `qa-${label}-${short()}`;
   const org = await db().organization.create({
-    data: { name: `QA ${label} ${slug}`, slug, status: 'ACTIVE', defaultCurrency: 'USD', timezone: 'UTC' },
+    data: {
+      name: `QA ${label} ${slug}`,
+      slug,
+      status: 'ACTIVE',
+      defaultCurrency: 'USD',
+      timezone: 'UTC',
+    },
   });
   const tenant: Tenant = { id: org.id, slug, name: org.name, branches: {}, roles: new Map() };
   for (const b of branches) {
@@ -122,8 +134,11 @@ export async function createTenant(label: string, branches: BranchSpec[]): Promi
 
 const roleFields = () =>
   new Set(
-    (db() as unknown as { _runtimeDataModel: { models: Record<string, { fields: { name: string }[] }> } })
-      ._runtimeDataModel.models.Role.fields.map((f) => f.name),
+    (
+      db() as unknown as {
+        _runtimeDataModel: { models: Record<string, { fields: { name: string }[] }> };
+      }
+    )._runtimeDataModel.models.Role.fields.map((f) => f.name),
   );
 
 async function roleFor(tenant: Tenant, roleKey: string, permissions?: string[]) {
@@ -157,7 +172,11 @@ export interface ActorOptions {
   permissions?: string[];
 }
 
-export async function createActor(tenant: Tenant, roleKey: string, opts: ActorOptions): Promise<Actor> {
+export async function createActor(
+  tenant: Tenant,
+  roleKey: string,
+  opts: ActorOptions,
+): Promise<Actor> {
   passwordHash ??= argon2.hash(PASSWORD, { type: argon2.argon2id });
   const email = `${opts.alias.toLowerCase()}.${short()}@qa.operix.test`;
   const user = await db().user.create({
@@ -180,7 +199,8 @@ export async function createActor(tenant: Tenant, roleKey: string, opts: ActorOp
     } as never,
   });
   const res = await login(email);
-  if (res.status !== 201) throw new Error(`Login failed for ${roleKey}: ${res.status} ${JSON.stringify(res.body)}`);
+  if (res.status !== 201)
+    throw new Error(`Login failed for ${roleKey}: ${res.status} ${JSON.stringify(res.body)}`);
   return {
     alias: opts.alias,
     roleKey,
@@ -213,7 +233,33 @@ export async function rec(
   });
   if (res.status !== 201)
     throw new Error(`Fixture ${module} create failed (${res.status}): ${JSON.stringify(res.body)}`);
-  return res.body as { id: string; status: string; branchId: string | null; data: Record<string, unknown> };
+  return res.body as {
+    id: string;
+    status: string;
+    branchId: string | null;
+    data: Record<string, unknown>;
+  };
+}
+
+/** Quotations are command-only: created through POST /quotations with server-priced lines. */
+export async function quote(actor: Actor, customerId: string, title: string, currency = 'USD') {
+  const res = await call(actor, 'POST', '/quotations', {
+    customerId,
+    title,
+    currency,
+    taxRate: '0',
+    items: [
+      { description: title, quantity: '1', unitPrice: currency === 'GNF' ? '100000' : '100.00' },
+    ],
+  });
+  if (res.status !== 201)
+    throw new Error(`Fixture quotation create failed (${res.status}): ${JSON.stringify(res.body)}`);
+  return res.body as {
+    id: string;
+    status: string;
+    branchId: string | null;
+    data: Record<string, unknown>;
+  };
 }
 
 export async function invoice(
@@ -231,7 +277,8 @@ export async function invoice(
     subtotal: amount,
     tax: 0,
   });
-  if (res.status !== 201) throw new Error(`Fixture invoice failed (${res.status}): ${JSON.stringify(res.body)}`);
+  if (res.status !== 201)
+    throw new Error(`Fixture invoice failed (${res.status}): ${JSON.stringify(res.body)}`);
   return res.body as { id: string; total: string; paid: string; status: string };
 }
 
@@ -271,15 +318,36 @@ export interface World {
   GN: string;
   AT: string;
   a: Record<
-    | 'owner' | 'admin' | 'branchManager' | 'finance' | 'accountant' | 'salesManager' | 'sales'
-    | 'projectManager' | 'inventory' | 'purchasing' | 'hr' | 'supervisor' | 'guard' | 'employee'
-    | 'employee2' | 'viewer' | 'customer' | 'platform' | 'atlasAdmin' | 'atlasEmployee' | 'atlasCustomer',
+    | 'owner'
+    | 'admin'
+    | 'branchManager'
+    | 'finance'
+    | 'accountant'
+    | 'salesManager'
+    | 'sales'
+    | 'projectManager'
+    | 'inventory'
+    | 'purchasing'
+    | 'hr'
+    | 'supervisor'
+    | 'guard'
+    | 'employee'
+    | 'employee2'
+    | 'viewer'
+    | 'customer'
+    | 'platform'
+    | 'atlasAdmin'
+    | 'atlasEmployee'
+    | 'atlasCustomer',
     Actor
   >;
   r: {
     customerA: string;
     customerB: string;
     customerC: string;
+    /** Branch projects so task probes can reference a project in the caller's branch. */
+    projectHQ: string;
+    projectGN: string;
     employeeProfileA: string;
     employeeProfileB: string;
     guardProfile: string;
@@ -297,18 +365,38 @@ export interface World {
  */
 export async function buildWorld(): Promise<World> {
   const ght = await createTenant('ght', [
-    { code: 'HQ', name: 'GHT Headquarters', country: 'US', currency: 'USD', timezone: 'America/New_York' },
-    { code: 'GN', name: 'GHT Guinea Operations', country: 'GN', currency: 'GNF', timezone: 'Africa/Conakry' },
+    {
+      code: 'HQ',
+      name: 'GHT Headquarters',
+      country: 'US',
+      currency: 'USD',
+      timezone: 'America/New_York',
+    },
+    {
+      code: 'GN',
+      name: 'GHT Guinea Operations',
+      country: 'GN',
+      currency: 'GNF',
+      timezone: 'Africa/Conakry',
+    },
   ]);
   const atlas = await createTenant('atlas', [
     { code: 'AT', name: 'Atlas Main', country: 'GN', currency: 'USD', timezone: 'Africa/Conakry' },
   ]);
-  const HQ = ght.branches.HQ, GN = ght.branches.GN, AT = atlas.branches.AT;
+  const HQ = ght.branches.HQ,
+    GN = ght.branches.GN,
+    AT = atlas.branches.AT;
 
   const owner = await createActor(ght, 'company_owner', { alias: 'owner' });
-  const customerA = (await rec(owner, 'customers', 'Northwind Dental Clinic', { branchId: HQ, type: 'company' })).id;
-  const customerB = (await rec(owner, 'customers', 'Kaloum Retail Group', { branchId: GN, type: 'company' })).id;
-  const customerC = (await rec(owner, 'customers', 'Fouta Agro Cooperative', { branchId: GN, type: 'company' })).id;
+  const customerA = (
+    await rec(owner, 'customers', 'Northwind Dental Clinic', { branchId: HQ, type: 'company' })
+  ).id;
+  const customerB = (
+    await rec(owner, 'customers', 'Kaloum Retail Group', { branchId: GN, type: 'company' })
+  ).id;
+  const customerC = (
+    await rec(owner, 'customers', 'Fouta Agro Cooperative', { branchId: GN, type: 'company' })
+  ).id;
   const profile = (first: string, last: string, branchId: string, n: string) =>
     rec(owner, 'employees', `${first} ${last}`, {
       branchId,
@@ -340,11 +428,27 @@ export async function buildWorld(): Promise<World> {
     purchasing: await actor('purchasing_officer', { alias: 'purchasing', branches: ['GN'] }),
     hr: await actor('hr_manager', { alias: 'hr' }),
     supervisor: await actor('security_supervisor', { alias: 'supervisor', branches: ['GN'] }),
-    guard: await actor('security_guard', { alias: 'guard', branches: ['GN'], employeeId: guardProfile }),
-    employee: await actor('employee', { alias: 'employee', branches: ['HQ'], employeeId: employeeProfileA }),
-    employee2: await actor('employee', { alias: 'employee2', branches: ['HQ'], employeeId: employeeProfileB }),
+    guard: await actor('security_guard', {
+      alias: 'guard',
+      branches: ['GN'],
+      employeeId: guardProfile,
+    }),
+    employee: await actor('employee', {
+      alias: 'employee',
+      branches: ['HQ'],
+      employeeId: employeeProfileA,
+    }),
+    employee2: await actor('employee', {
+      alias: 'employee2',
+      branches: ['HQ'],
+      employeeId: employeeProfileB,
+    }),
     viewer: await actor('readonly_user', { alias: 'viewer', branches: ['HQ'] }),
-    customer: await actor('customer', { alias: 'customer', branches: ['HQ'], customerId: customerA }),
+    customer: await actor('customer', {
+      alias: 'customer',
+      branches: ['HQ'],
+      customerId: customerA,
+    }),
     platform: await actor('platform_super_admin', { alias: 'platform' }),
   } as World['a'];
 
@@ -353,14 +457,38 @@ export async function buildWorld(): Promise<World> {
   const assign = await call(owner, 'PATCH', `/records/customers/${customerA}`, {
     data: { salespersonUserId: a.sales.userId, projectManagerUserId: a.projectManager.userId },
   });
-  if (assign.status !== 200) throw new Error(`Assigning customer A failed: ${JSON.stringify(assign.body)}`);
+  if (assign.status !== 200)
+    throw new Error(`Assigning customer A failed: ${JSON.stringify(assign.body)}`);
+  // Tasks must belong to a project in their branch (pilot contract).
+  const projectHQ = (
+    await rec(owner, 'projects', 'QA HQ project', {
+      branchId: HQ,
+      data: { customerId: customerA, projectManagerUserId: a.projectManager.userId },
+    })
+  ).id;
+  const projectGN = (
+    await rec(owner, 'projects', 'QA GN project', { branchId: GN, data: { customerId: customerB } })
+  ).id;
 
   a.atlasAdmin = await createActor(atlas, 'company_admin', { alias: 'atlasAdmin' });
-  const atlasCustomer = (await rec(a.atlasAdmin, 'customers', 'Atlas Client One', { branchId: AT })).id;
-  const atlasProject = (await rec(a.atlasAdmin, 'projects', 'Atlas Intranet', { branchId: AT, data: { customerId: atlasCustomer } })).id;
+  const atlasCustomer = (await rec(a.atlasAdmin, 'customers', 'Atlas Client One', { branchId: AT }))
+    .id;
+  const atlasProject = (
+    await rec(a.atlasAdmin, 'projects', 'Atlas Intranet', {
+      branchId: AT,
+      data: { customerId: atlasCustomer },
+    })
+  ).id;
   const atlasInvoice = (await invoice(a.atlasAdmin, atlasCustomer, AT, 500)).id;
-  a.atlasEmployee = await createActor(atlas, 'employee', { alias: 'atlasEmployee', branches: ['AT'] });
-  a.atlasCustomer = await createActor(atlas, 'customer', { alias: 'atlasCustomer', branches: ['AT'], customerId: atlasCustomer });
+  a.atlasEmployee = await createActor(atlas, 'employee', {
+    alias: 'atlasEmployee',
+    branches: ['AT'],
+  });
+  a.atlasCustomer = await createActor(atlas, 'customer', {
+    alias: 'atlasCustomer',
+    branches: ['AT'],
+    customerId: atlasCustomer,
+  });
 
   return {
     ght,
@@ -369,7 +497,19 @@ export async function buildWorld(): Promise<World> {
     GN,
     AT,
     a,
-    r: { customerA, customerB, customerC, employeeProfileA, employeeProfileB, guardProfile, atlasCustomer, atlasProject, atlasInvoice },
+    r: {
+      customerA,
+      customerB,
+      customerC,
+      projectHQ,
+      projectGN,
+      employeeProfileA,
+      employeeProfileB,
+      guardProfile,
+      atlasCustomer,
+      atlasProject,
+      atlasInvoice,
+    },
   };
 }
 
@@ -378,5 +518,8 @@ export async function buildWorld(): Promise<World> {
 /** Appends structured evidence rows to tmp/qa-e2e/<name>.json (gitignored). */
 export function writeEvidence(name: string, rows: unknown) {
   mkdirSync(RESULTS_DIR, { recursive: true });
-  writeFileSync(resolve(RESULTS_DIR, `${name}.json`), JSON.stringify({ generatedAt: new Date().toISOString(), rows }, null, 2));
+  writeFileSync(
+    resolve(RESULTS_DIR, `${name}.json`),
+    JSON.stringify({ generatedAt: new Date().toISOString(), rows }, null, 2),
+  );
 }

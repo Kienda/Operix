@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Body,
   Controller,
-  ForbiddenException,
   NotFoundException,
   Param,
   ParseUUIDPipe,
@@ -121,16 +120,31 @@ export class ProjectsController {
   /** IN_PROGRESS → PENDING (on hold), with a recorded reason. */
   @RequirePermissions('projects.change_status')
   @Post(':id/hold')
-  hold(@Param('id', ParseUUIDPipe) id: string, @Body() body: ReasonDto, @Req() r: AuthenticatedRequest) {
-    if (!body.reason?.trim()) throw new BadRequestException('A reason is required to put a project on hold');
-    return this.transition(r, id, ['IN_PROGRESS'], 'PENDING', 'PROJECT_ON_HOLD', { holdReason: body.reason.trim() });
+  hold(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: ReasonDto,
+    @Req() r: AuthenticatedRequest,
+  ) {
+    if (!body.reason?.trim())
+      throw new BadRequestException('A reason is required to put a project on hold');
+    return this.transition(r, id, ['IN_PROGRESS'], 'PENDING', 'PROJECT_ON_HOLD', {
+      holdReason: body.reason.trim(),
+    });
   }
 
   /** PENDING (on hold) → IN_PROGRESS. A project that never started uses /start. */
   @RequirePermissions('projects.change_status')
   @Post(':id/resume')
   resume(@Param('id', ParseUUIDPipe) id: string, @Req() r: AuthenticatedRequest) {
-    return this.transition(r, id, ['PENDING'], 'IN_PROGRESS', 'PROJECT_RESUMED', { holdReason: null }, true);
+    return this.transition(
+      r,
+      id,
+      ['PENDING'],
+      'IN_PROGRESS',
+      'PROJECT_RESUMED',
+      { holdReason: null },
+      true,
+    );
   }
 
   @RequirePermissions('projects.change_status')
@@ -141,11 +155,23 @@ export class ProjectsController {
 
   @RequirePermissions('projects.change_status')
   @Post(':id/cancel')
-  cancel(@Param('id', ParseUUIDPipe) id: string, @Body() body: ReasonDto, @Req() r: AuthenticatedRequest) {
-    if (!body.reason?.trim()) throw new BadRequestException('A reason is required to cancel a project');
-    return this.transition(r, id, ['DRAFT', 'PENDING', 'IN_PROGRESS'], 'CANCELLED', 'PROJECT_CANCELLED', {
-      cancelReason: body.reason.trim(),
-    });
+  cancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: ReasonDto,
+    @Req() r: AuthenticatedRequest,
+  ) {
+    if (!body.reason?.trim())
+      throw new BadRequestException('A reason is required to cancel a project');
+    return this.transition(
+      r,
+      id,
+      ['DRAFT', 'PENDING', 'IN_PROGRESS'],
+      'CANCELLED',
+      'PROJECT_CANCELLED',
+      {
+        cancelReason: body.reason.trim(),
+      },
+    );
   }
 
   private transition(

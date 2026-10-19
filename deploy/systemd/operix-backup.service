@@ -1,0 +1,13 @@
+[Unit]
+Description=Operix scheduled database backup (Operix only)
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/ght/apps/operix/current/deploy/scripts/backup.sh
+# Keep the backup polite to Tontin on the shared host.
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=1800

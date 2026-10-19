@@ -41,10 +41,11 @@ setInterval(() => {
 const identityOf = (req: Request) => {
   const body = (req.body ?? {}) as Record<string, unknown>;
   const raw = [body.email, body.token, body.refreshToken].find((v) => typeof v === 'string') as
-    | string
-    | undefined;
+    string | undefined;
   // Hash so that tokens never sit in memory keys verbatim.
-  return raw ? createHash('sha256').update(raw.trim().toLowerCase()).digest('hex').slice(0, 32) : null;
+  return raw
+    ? createHash('sha256').update(raw.trim().toLowerCase()).digest('hex').slice(0, 32)
+    : null;
 };
 
 @Injectable()

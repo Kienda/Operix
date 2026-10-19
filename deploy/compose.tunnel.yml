@@ -1,0 +1,26 @@
+# PROXY_MODE=tunnel: HTTPS through a Cloudflare Tunnel. The connector dials out to Cloudflare;
+# nothing listens publicly and the shared host's 80/443 proxy (Tontin) is not involved.
+# In Cloudflare, route both public hostnames to http://web:8080 and protect them with an
+# Access policy listing the approved testers.
+services:
+  tunnel:
+    image: ${ECR_REGISTRY:?set ECR_REGISTRY}/operix-tunnel:${IMAGE_TAG:?set IMAGE_TAG}
+    command: [tunnel, --metrics, '127.0.0.1:20241', run, --token-file, /run/secrets/tunnel_token]
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    # Reaches only the gateway; the API, database and Redis are on internal networks.
+    networks: [ingress]
+    secrets: [tunnel_token]
+    mem_limit: 128m
+    cpus: 0.25
+    depends_on:
+      web: {condition: service_started}
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+secrets:
+  tunnel_token: {file: '${SECRETS_DIR:?set SECRETS_DIR}/tunnel_token'}

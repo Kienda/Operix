@@ -75,7 +75,8 @@ export const reportQuerySchema = z.object({
    * is grouped per currency with no cross-currency total.
    */
   currency: currencyCode.optional(),
-  groupBy: z.enum(['day', 'week', 'month', 'quarter', 'year', 'branch', 'service', 'employee'])
+  groupBy: z
+    .enum(['day', 'week', 'month', 'quarter', 'year', 'branch', 'service', 'employee'])
     .default('month'),
   includeArchived: z.coerce.boolean().default(false),
 });
@@ -102,9 +103,7 @@ export const savedReportSchema = z.object({
 });
 
 export const dashboardQuerySchema = z.object({
-  range: z
-    .enum(['today', 'week', 'month', 'quarter', 'year', 'custom'])
-    .default('month'),
+  range: z.enum(['today', 'week', 'month', 'quarter', 'year', 'custom']).default('month'),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
   branchId: uuid.optional(),

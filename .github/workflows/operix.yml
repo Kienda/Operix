@@ -75,8 +75,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           python3 -m unittest discover -s deploy/tests -v
-          bash -n deploy/scripts/*.sh deploy/docker/*.sh
-          docker run --rm -v "$PWD:/mnt:ro" koalaman/shellcheck:v0.10.0 -S warning /mnt/deploy/scripts/*.sh /mnt/deploy/docker/*.sh
+          for script in deploy/scripts/*.sh deploy/docker/*.sh; do bash -n "$script"; done
+          docker run --rm -v "$PWD:/mnt:ro" -w /mnt koalaman/shellcheck:v0.10.0 -S warning deploy/scripts/*.sh deploy/docker/*.sh
       - name: Existing lint and formatting gates
         if: ${{ !cancelled() }}
         run: |
@@ -110,12 +110,13 @@ jobs:
             docker build -f deploy/docker/backend.Dockerfile --target "$target" -t "local/operix-$target:test" .
           done
           docker build -f deploy/docker/web.Dockerfile -t local/operix-web:test .
+          docker build -f deploy/docker/tunnel.Dockerfile --target tunnel -t local/operix-tunnel:test .
       - name: Exercise actual images, migrations, readiness and empty accounts
         run: python3 deploy/tests/smoke.py
       - name: Scan release images
         run: |
           scan_status=0
-          for image in api worker migrate web; do
+          for image in api worker migrate web tunnel; do
             docker save "local/operix-$image:test" -o image.tar
             docker run --rm -v "$PWD/image.tar:/scan/image.tar:ro" -v "$HOME/.cache/trivy:/root/.cache/" \
               aquasec/trivy:0.61.1 image --input /scan/image.tar --scanners vuln --severity HIGH,CRITICAL --exit-code 1 || scan_status=1
@@ -150,9 +151,9 @@ jobs:
           registry="$ACCOUNT.dkr.ecr.us-east-1.amazonaws.com"
           tag="$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$registry"
-          for target in api worker migrate web; do
+          for target in api worker migrate web tunnel; do
             file=deploy/docker/backend.Dockerfile
-            [ "$target" != web ] || file=deploy/docker/web.Dockerfile
+            case "$target" in web|tunnel) file="deploy/docker/$target.Dockerfile";; esac
             image="$registry/operix-$target:$tag"
             docker build -f "$file" --target "$target" --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$image" .
             docker save "$image" -o image.tar
@@ -201,7 +202,7 @@ jobs:
           parameters=$(jq -n --arg r "$RELEASE" --arg c "$CHECKSUM" '{ReleaseId:[$r],Checksum:[$c],Mode:["deploy"]}')
           command=$(aws ssm send-command --instance-ids "$INSTANCE" --document-name Operix-Staging-Release \
             --document-version '1' --parameters "$parameters" --timeout-seconds 120 --query Command.CommandId --output text)
-          for attempt in $(seq 1 150); do
+          for _ in $(seq 1 150); do
             status=$(aws ssm get-command-invocation --command-id "$command" --instance-id "$INSTANCE" --query Status --output text 2>/dev/null || true)
             case "$status" in
               Success) echo 'Operix restricted staging deployment succeeded'; exit 0;;

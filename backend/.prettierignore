@@ -1,0 +1,5 @@
+# Generated files are never formatted.
+**/dist
+**/node_modules
+**/.turbo
+**/.tmp-build

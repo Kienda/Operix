@@ -21,12 +21,15 @@ export function loadBackendEnv(): void {
 /** Refuses anything that is not plainly a local development database. */
 export function assertSafeDatabase(): URL {
   loadBackendEnv();
-  if (process.env.NODE_ENV === 'production') throw new Error('QA suite refuses to run with NODE_ENV=production');
+  if (process.env.NODE_ENV === 'production')
+    throw new Error('QA suite refuses to run with NODE_ENV=production');
   const raw = process.env.QA_TEST_DATABASE_URL ?? process.env.DATABASE_URL;
   if (!raw) throw new Error('DATABASE_URL is not configured');
   const url = new URL(raw);
   if (!['localhost', '127.0.0.1', '::1', '[::1]'].includes(url.hostname)) {
-    throw new Error(`QA suite only runs against a local PostgreSQL server (got host ${url.hostname})`);
+    throw new Error(
+      `QA suite only runs against a local PostgreSQL server (got host ${url.hostname})`,
+    );
   }
   return url;
 }

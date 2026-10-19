@@ -53,9 +53,26 @@ with tempfile.TemporaryDirectory(prefix="operix-smoke-") as directory:
         result = compose("exec", "-T", "postgres", "psql", "-U", "operix_admin", "-d", "operix", "-Atc",
                          "SELECT rolsuper OR rolcreaterole OR rolcreatedb OR rolbypassrls FROM pg_roles WHERE rolname='operix_app'", capture=True)
         assert result.stdout.strip() == "f", "Application database role is privileged"
+        # The API role may append audit rows but never rewrite them or touch migration history.
+        result = compose("exec", "-T", "postgres", "psql", "-U", "operix_admin", "-d", "operix", "-Atc",
+                         "SELECT has_table_privilege('operix_app','\"AuditLog\"','INSERT'), "
+                         "has_table_privilege('operix_app','\"AuditLog\"','UPDATE') OR has_table_privilege('operix_app','\"AuditLog\"','DELETE'), "
+                         "has_table_privilege('operix_app','_prisma_migrations','SELECT')", capture=True)
+        assert result.stdout.strip() == "t|f|f", f"Audit log/migration privileges not hardened: {result.stdout.strip()}"
+        with urllib.request.urlopen("http://127.0.0.1:18081/", timeout=10) as response:
+            for header in ["Content-Security-Policy", "Strict-Transport-Security", "X-Frame-Options", "X-Content-Type-Options"]:
+                assert response.headers.get(header), f"Missing security header {header}"
+        # The production bootstrap runs under the least-privilege role; a dry run writes nothing.
+        result = compose("exec", "-T", "api", "node", "--require", "/opt/operix/runtime-env.cjs", "dist/cli/bootstrap-pilot.js",
+                         "--owner-email", "owner@operix.test", "--dry-run", capture=True)
+        assert "DRY RUN" in result.stdout and "GHT Guinea" in result.stdout, result.stdout
+        result = compose("exec", "-T", "postgres", "psql", "-U", "operix_admin", "-d", "operix", "-Atc",
+                         'SELECT count(*) FROM "Organization"', capture=True)
+        assert result.stdout.strip() == "0", "Bootstrap dry run wrote data"
         services = compose("ps", "--services", capture=True).stdout.splitlines()
         assert "worker" not in services
-        print("PASS: Linux images, private database, migrations, SPA/API routing, readiness and no seed accounts")
+        print("PASS: Linux images, private database, migrations, SPA/API routing, readiness, no seed accounts, "
+              "append-only audit log, security headers and production bootstrap dry run")
     finally:
         compose("down", "--volumes")  # Only this uniquely named, disposable local test project.
         if os.name == 'nt':

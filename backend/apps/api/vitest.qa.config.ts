@@ -13,7 +13,9 @@ export default defineConfig({
     include: ['test/qa/**/*.qa-spec.ts'],
     globalSetup: ['test/qa/global-setup.ts'],
     pool: 'forks',
-    poolOptions: { forks: { singleFork: true } },
+    // Vitest 4: one forked worker, shared across files (formerly poolOptions.forks.singleFork).
+    maxWorkers: 1,
+    isolate: false,
     fileParallelism: false,
     testTimeout: 60_000,
     hookTimeout: 180_000,

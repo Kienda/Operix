@@ -66,7 +66,10 @@ export const RECORD_SCHEMAS: Record<string, Record<string, Check>> = {
     city: text(80),
     address: text(300),
     notes: text(2000),
+    // Every customer assignment field the scope policy (ASSIGNMENT_FIELDS) honors.
     salespersonUserId: reference,
+    projectManagerUserId: reference,
+    assignedToUserId: reference,
     taxId: text(60),
     paymentTerms: text(120),
   },
@@ -114,7 +117,8 @@ export function validateRecordSchema(
 ) {
   const schema = RECORD_SCHEMAS[module];
   if (!schema) return;
-  if (JSON.stringify(data).length > 32_000) throw new BadRequestException('Record data is too large');
+  if (JSON.stringify(data).length > 32_000)
+    throw new BadRequestException('Record data is too large');
   for (const [key, value] of Object.entries(data)) {
     const check = schema[key];
     if (!check) throw new BadRequestException(`${key}: is not a field of ${module}`);
@@ -122,6 +126,11 @@ export function validateRecordSchema(
   }
   for (const key of required)
     if (data[key] == null || data[key] === '') throw new BadRequestException(`${key}: is required`);
-  if (module === 'projects' && typeof data.startDate === 'string' && typeof data.dueDate === 'string')
-    if (data.dueDate < data.startDate) throw new BadRequestException('dueDate: must not be before startDate');
+  if (
+    module === 'projects' &&
+    typeof data.startDate === 'string' &&
+    typeof data.dueDate === 'string'
+  )
+    if (data.dueDate < data.startDate)
+      throw new BadRequestException('dueDate: must not be before startDate');
 }
