@@ -336,7 +336,7 @@
               "Condition": {
                 "StringEquals": {
                   "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-                  "token.actions.githubusercontent.com:sub": "repo:Kienda/Operix:environment:operix-images"
+                  "token.actions.githubusercontent.com:sub": "repo:Kienda@62873841/Operix@1423912038:environment:operix-images"
                 }
               }
             }
@@ -446,7 +446,7 @@
               "Condition": {
                 "StringEquals": {
                   "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-                  "token.actions.githubusercontent.com:sub": "repo:Kienda/Operix:environment:operix-staging"
+                  "token.actions.githubusercontent.com:sub": "repo:Kienda@62873841/Operix@1423912038:environment:operix-staging"
                 }
               }
             }

@@ -125,6 +125,20 @@ class DeploymentContracts(unittest.TestCase):
         dockerfile = (ROOT / "deploy/docker/tunnel.Dockerfile").read_text()
         self.assertRegex(dockerfile, r"cloudflared:[0-9.]+@sha256:[0-9a-f]{64}")
 
+    def test_dockerfile_copy_sources_are_tracked(self):
+        # CI builds from a clean checkout: an untracked or empty directory (git keeps no empty
+        # directories) builds locally but fails there with '"/path": not found'.
+        tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+        for dockerfile in (ROOT / "deploy/docker").glob("*.Dockerfile"):
+            for line in dockerfile.read_text().splitlines():
+                parts = line.split()
+                if not parts or parts[0] != "COPY" or any(p.startswith("--from") for p in parts):
+                    continue
+                for source in [p for p in parts[1:-1] if not p.startswith("--")]:
+                    prefix = source.rstrip("/")
+                    self.assertTrue(any(f == prefix or f.startswith(prefix + "/") for f in tracked),
+                                    f"{dockerfile.name}: COPY source {source} is not tracked by git")
+
     def test_ssm_accepts_no_arbitrary_command(self):
         document = json.loads((ROOT / "deploy/aws/ssm-document.json").read_text())
         self.assertEqual(set(document["parameters"]), {"ReleaseId", "Checksum", "Mode"})
@@ -133,9 +147,12 @@ class DeploymentContracts(unittest.TestCase):
             self.assertTrue("allowedPattern" in param or "allowedValues" in param)
         template = json.loads((ROOT / "deploy/aws/operix-staging.template.json").read_text())
         self.assertFalse(any(r["Type"] in ["AWS::EC2::Instance", "AWS::Route53::RecordSet"] for r in template["Resources"].values()))
-        for name in ["ImagesRole", "DeployRole"]:
+        for name, environment in [("ImagesRole", "operix-images"), ("DeployRole", "operix-staging")]:
             trust = template["Resources"][name]["Properties"]["AssumeRolePolicyDocument"]
-            self.assertIn("repo:Kienda/Operix:environment:operix-", json.dumps(trust))
+            self.assertEqual(trust["Statement"][0]["Condition"], {"StringEquals": {
+                "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                "token.actions.githubusercontent.com:sub": f"repo:Kienda@62873841/Operix@1423912038:environment:{environment}",
+            }})
         repos = {r["Properties"]["RepositoryName"] for r in template["Resources"].values() if r["Type"] == "AWS::ECR::Repository"}
         self.assertEqual(repos, {f"operix-{n}" for n in ("api", "worker", "migrate", "web", "tunnel")})
 

@@ -138,14 +138,11 @@ describe('Assigned commercial scope', () => {
     expect(ids(list)).toContain(assignedProject);
     expect(ids(list)).toContain(unassignedProject);
   });
-  it.fails(
-    'KNOWN GAP (employee roles have no projects.view; project visibility for task members is an open GHT decision): an employee who is a project member can see the project they work on',
-    async () => {
-      // Employee role has tasks.view but not projects.view — record the capability gap.
-      const res = await call(w.a.employee, 'GET', `/records/projects/${assignedProject}`);
-      expect(res.status).toBe(200);
-    },
-  );
+  it('project membership alone does not grant the employee projects.view capability', async () => {
+    // Membership narrows data scope; it does not add a catalog capability.
+    const res = await call(w.a.employee, 'GET', `/records/projects/${assignedProject}`);
+    expect(res.status).toBe(403);
+  });
 });
 
 describe('Attendance (self)', () => {

@@ -159,11 +159,8 @@ describe('Subscription lifecycle', () => {
 });
 
 describe('Customer identity', () => {
-  it.fails(
-    'KNOWN GAP (customer portal not implemented): a customer account receives a usable portal capability set after sign-in',
-    async () => {
-      // The customer role's permissions all belong to the `portal` module.
-      expect(w.a.customer.permissions).toContain('portal.projects.view');
-    },
-  );
+  it('a customer account receives a usable portal capability set after sign-in', async () => {
+    // The customer role's permissions all belong to the `portal` module.
+    expect(w.a.customer.permissions).toContain('portal.projects.view');
+  });
 });

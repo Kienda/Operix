@@ -1,5 +1,7 @@
 # Dependency security verification
 
+Follow-up: [workflow 10 remediation](workflow-10-remediation.md) restores real lint tasks and replaces the inherited expected-failure cases with implemented features and ordinary tests. The validation table below records the earlier dependency-only pass.
+
 Date: 2026-10-18. Committed baseline: 08684c5.
 
 The baseline reproduces exactly 35 findings: 4 critical, 18 high, 12 moderate and 1 low. The working tree already contained uncommitted remediation at the start of this task; those changes were reviewed and validated. The regenerated lockfile passes the unchanged full backend gate, `pnpm --dir backend audit --audit-level=high`, with zero findings of any severity. This includes development and migration tooling. Frontend `npm audit --audit-level=high` also reports zero findings.

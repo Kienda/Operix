@@ -25,13 +25,13 @@ beforeAll(async () => {
 
 describe('Customer portal', () => {
   for (const module of ['quotations', 'projects']) {
-    it.fails(
-      `KNOWN GAP (customer portal not implemented): customer A can list their own ${module}`,
-      async () => {
-        const res = await call(w.a.customer, 'GET', `/records/${module}`);
-        expect(res.status).toBe(200);
-      },
-    );
+    it(`customer A can list only their own ${module} through the portal`, async () => {
+      const res = await call(w.a.customer, 'GET', `/portal/${module}`);
+      expect(res.status).toBe(200);
+      const ids = res.body.data.map((row: { id: string }) => row.id);
+      expect(ids).toContain(module === 'projects' ? projectA : quoteA);
+      expect(ids).not.toContain(module === 'projects' ? projectB : quoteB);
+    });
   }
   it('customer A never receives customer B records (direct ID)', async () => {
     for (const [module, id] of [
@@ -39,17 +39,18 @@ describe('Customer portal', () => {
       ['projects', projectB],
       ['customers', w.r.customerB],
     ] as const) {
-      const res = await call(w.a.customer, 'GET', `/records/${module}/${id}`);
+      const res = await call(
+        w.a.customer,
+        'GET',
+        module === 'customers' ? `/records/${module}/${id}` : `/portal/${module}/${id}`,
+      );
       expect([403, 404], module).toContain(res.status);
     }
   });
-  it.fails(
-    'KNOWN GAP (customer portal not implemented): customer A can see their own invoices',
-    async () => {
-      const res = await call(w.a.customer, 'GET', '/finance/invoices');
-      expect(res.status).toBe(200);
-    },
-  );
+  it('customer A can see their own invoices through the portal', async () => {
+    const res = await call(w.a.customer, 'GET', '/portal/invoices');
+    expect(res.status).toBe(200);
+  });
   it('customer A cannot read internal data (employees, finance summary, inventory)', async () => {
     for (const path of [
       '/records/employees',

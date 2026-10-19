@@ -57,6 +57,13 @@ export const CONTRACT_REQUIREMENTS = [
 ];
 
 export const RECORD_SCHEMAS: Record<string, Record<string, Check>> = {
+  milestones: { projectId: reference, dueDate: date, description: text(2000) },
+  'guard-assignments': {
+    userId: reference,
+    siteId: reference,
+    startsAt: text(40),
+    endsAt: text(40),
+  },
   customers: {
     kind: oneOf('company', 'individual'),
     contactName: text(120),
@@ -98,6 +105,9 @@ export const RECORD_SCHEMAS: Record<string, Record<string, Check>> = {
 
 /** Which statuses the generic endpoints may set for modules without domain commands. */
 export const STATUS_POLICY: Record<string, { create: string[]; update: string[] }> = {
+  patrols: { create: ['ACTIVE'], update: ['ACTIVE', 'PENDING'] },
+  checkpoints: { create: ['ACTIVE'], update: ['ACTIVE', 'PENDING'] },
+  'guard-assignments': { create: ['ACTIVE'], update: ['ACTIVE', 'CANCELLED'] },
   customers: { create: ['ACTIVE', 'PENDING'], update: ['ACTIVE', 'PENDING'] },
   tasks: {
     create: ['PENDING', 'IN_PROGRESS'],
@@ -108,6 +118,19 @@ export const STATUS_POLICY: Record<string, { create: string[]; update: string[] 
 /** Fields only changeable through domain commands, never via generic PATCH. */
 export const COMMAND_FIELDS: Record<string, string[]> = {
   projects: ['holdReason', 'cancelReason'],
+  leads: ['convertedCustomerId'],
+  expenses: ['approvedBy', 'approvedAt'],
+  'purchase-requests': ['approvedBy', 'approvedAt'],
+  contracts: [
+    'signedDocumentId',
+    'approvedBy',
+    'approvedAt',
+    'signedBy',
+    'signedAt',
+    'countersignedBy',
+    'countersignedAt',
+  ],
+  'purchase-orders': ['receipt', 'receipts', 'sentBy', 'sentAt'],
 };
 
 export function validateRecordSchema(
@@ -126,6 +149,17 @@ export function validateRecordSchema(
   }
   for (const key of required)
     if (data[key] == null || data[key] === '') throw new BadRequestException(`${key}: is required`);
+  if (module === 'guard-assignments' && data.startsAt !== undefined && data.endsAt !== undefined) {
+    const start = Date.parse(String(data.startsAt)),
+      end = Date.parse(String(data.endsAt));
+    if (
+      !Number.isFinite(start) ||
+      !Number.isFinite(end) ||
+      end <= start ||
+      end - start > 86_400_000
+    )
+      throw new BadRequestException('An assignment requires a valid shift of at most 24 hours');
+  }
   if (
     module === 'projects' &&
     typeof data.startDate === 'string' &&

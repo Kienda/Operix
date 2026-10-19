@@ -367,11 +367,9 @@ function probes(): Probe[] {
   return list;
 }
 
-/** Catalog permissions that can be effective in a tenant (the portal module is never enabled by the seed). */
+/** Every tenant product is explicitly enabled in this QA world, including portal. */
 function catalogEffective(roleKey: string) {
-  return new Set(
-    (getSystemRole(roleKey)?.permissions ?? []).filter((p) => !p.startsWith('portal.')),
-  );
+  return new Set(getSystemRole(roleKey)?.permissions ?? []);
 }
 
 describe('Role capability matrix (catalog vs runtime)', () => {

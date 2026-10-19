@@ -11,6 +11,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { DatabaseService } from '../platform/database.module';
+import type { Prisma } from '@operix/database';
 import type { AuthenticatedRequest } from '../security/request-context';
 import { RequirePermissions } from '../security/permissions.decorator';
 import { assertBranch, recordWhere } from '../security/authorization';
@@ -142,7 +143,7 @@ export class AttendanceController {
   @RequirePermissions('attendance.check_in')
   @Post('check-in')
   async checkIn(@Body() body: GpsFixDto, @Req() r: AuthenticatedRequest) {
-    const open = await this.db.businessRecord.findFirst({
+    const candidates = await this.db.businessRecord.findMany({
       where: {
         organizationId: r.auth.organizationId,
         module: 'attendance',
@@ -151,6 +152,8 @@ export class AttendanceController {
         status: { in: ['ACTIVE', 'PENDING'] },
       },
     });
+    // PENDING describes review state, not whether the worker is still on shift.
+    const open = candidates.find((record) => !(record.data as unknown as AttendanceData)?.checkOut);
     if (open)
       throw new BadRequestException('Already checked in — check out before starting a new shift');
 
@@ -227,9 +230,12 @@ export class AttendanceController {
     });
     if (!record || record.archivedAt)
       throw new BadRequestException('No open shift found for this check-in');
-    if (record.status === 'COMPLETED') throw new BadRequestException('Shift already checked out');
+    if (!['ACTIVE', 'PENDING'].includes(record.status))
+      throw new BadRequestException('Shift is not open for checkout');
 
     const existing = record.data as unknown as AttendanceData;
+    if (!existing?.checkIn?.capturedAt) throw new BadRequestException('Invalid shift check-in');
+    if (existing.checkOut) throw new BadRequestException('Shift already checked out');
     const checkInAt = new Date(existing.checkIn.capturedAt);
     const durationMinutes = Math.max(0, Math.round((Date.now() - checkInAt.getTime()) / 60000));
     const nextData: AttendanceData = {
@@ -238,14 +244,23 @@ export class AttendanceController {
       durationMinutes,
     };
 
-    return this.db.businessRecord.update({
-      where: { id },
+    const updated = await this.db.businessRecord.updateManyAndReturn({
+      // Claim the exact state read above so concurrent check-outs cannot both win.
+      where: {
+        id,
+        organizationId: r.auth.organizationId,
+        createdBy: r.auth.userId,
+        data: { equals: record.data as Prisma.InputJsonValue },
+      },
       data: {
         status: record.status === 'PENDING' ? 'PENDING' : 'COMPLETED',
         data: nextData as never,
         updatedBy: r.auth.userId,
       },
     });
+    if (updated.length !== 1)
+      throw new BadRequestException('Shift changed; reload before retrying');
+    return updated[0];
   }
 
   /** A supervisor clears a flagged (out-of-geofence or low-accuracy) shift. */

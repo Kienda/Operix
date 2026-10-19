@@ -4,9 +4,6 @@ import { buildWorld, call, db, invoice, paymentBody, rec, uid, type World } from
 /**
  * Primary commercial chain and project/procurement workflows, step by step.
  *
- * `it.fails('KNOWN GAP ...')` marks intended behaviour that is not implemented
- * (outside the GHT pilot scope). The assertion is unchanged; once the feature is
- * implemented the test starts failing and must be converted back to `it`.
  * Each step asserts the intended behaviour; a failing step marks where the
  * workflow currently stops. Later steps continue from workarounds so every
  * gap is reported, not just the first one.
@@ -48,24 +45,16 @@ describe.sequential(
       expect(res.body.data.stage).toBe('qualified');
     });
 
-    it.fails(
-      'KNOWN GAP (no lead conversion command): 3. the qualified lead converts into a customer (leads.convert)',
-      async () => {
-        const res = await call(w.a.sales, 'POST', `/records/leads/${s.lead}/convert`, {});
-        expect(res.status).toBe(201);
-      },
-    );
-
-    it('3b. workaround: sales rep creates the customer manually', async () => {
-      const res = await call(w.a.sales, 'POST', '/records', {
-        module: 'customers',
-        type: 'company',
-        name: 'Conakry Port Authority',
-        branchId: w.HQ,
-        data: { salespersonUserId: w.a.sales.userId },
-      });
+    it('3. the qualified lead converts into a customer (leads.convert)', async () => {
+      const res = await call(w.a.sales, 'POST', `/records/leads/${s.lead}/convert`, {});
       expect(res.status).toBe(201);
       s.customer = res.body.id;
+    });
+
+    it('3b. conversion retries return the same customer', async () => {
+      const res = await call(w.a.sales, 'POST', `/records/leads/${s.lead}/convert`, {});
+      expect(res.status).toBe(201);
+      expect(res.body.id).toBe(s.customer);
     });
 
     it('4. sales rep creates a quotation for the customer and sends it', async () => {
@@ -96,26 +85,22 @@ describe.sequential(
       expect(res.body.status).toBe('APPROVED');
     });
 
-    it.fails(
-      'KNOWN GAP (assigned-scope catalog project_manager cannot reference an unassigned customer): 6. a project is created for the customer with a contract gate',
-      async () => {
-        const res = await call(w.a.projectManager, 'POST', '/records', {
-          module: 'projects',
-          type: 'client_project',
-          name: 'Website Development — Port Authority',
-          branchId: w.HQ,
-          data: {
-            customerId: s.customer,
-            quotationId: s.quote,
-            serviceType: 'software',
-            contractRequirement: 'before_work_starts',
-            projectManagerUserId: w.a.projectManager.userId,
-          },
-        });
-        expect(res.status).toBe(201);
-        s.project = res.body.id;
-      },
-    );
+    it('6. an unassigned project manager cannot create a project for this customer', async () => {
+      const res = await call(w.a.projectManager, 'POST', '/records', {
+        module: 'projects',
+        type: 'client_project',
+        name: 'Website Development — Port Authority',
+        branchId: w.HQ,
+        data: {
+          customerId: s.customer,
+          quotationId: s.quote,
+          serviceType: 'software',
+          contractRequirement: 'before_work_starts',
+          projectManagerUserId: w.a.projectManager.userId,
+        },
+      });
+      expect(res.status).toBe(400);
+    });
 
     it('6b. workaround: the sales rep assigns the project manager on the customer, then the project is created', async () => {
       const assign = await call(w.a.sales, 'PATCH', `/records/customers/${s.customer}`, {
@@ -138,45 +123,62 @@ describe.sequential(
       s.project = res.body.id;
     });
 
-    it.fails(
-      'KNOWN GAP (assigned-scope catalog project_manager cannot see a quotation another user created): 6c. the project manager links the project to its quotation',
-      async () => {
-        const res = await call(w.a.projectManager, 'PATCH', `/records/projects/${s.project}`, {
-          data: { quotationId: s.quote },
-        });
-        expect(res.status).toBe(200);
-      },
-    );
+    it('6c. linking a quotation requires visibility of both records', async () => {
+      const res = await call(w.a.projectManager, 'PATCH', `/records/projects/${s.project}`, {
+        data: { quotationId: s.quote },
+      });
+      expect(res.status).toBe(400);
+      expect(
+        (
+          await call(w.a.owner, 'PATCH', `/records/projects/${s.project}`, {
+            data: { quotationId: s.quote },
+          })
+        ).status,
+      ).toBe(200);
+    });
 
-    it.fails(
-      'KNOWN GAP (assigned-scope catalog sales_representative cannot reference a project it is not a member of; contracts disabled in pilot): 7a. a contract linked to the project is created',
-      async () => {
-        const res = await call(w.a.sales, 'POST', '/records', {
-          module: 'contracts',
-          type: 'service_contract',
-          name: 'Website delivery agreement',
-          branchId: w.HQ,
-          data: {
-            customerId: s.customer,
-            projectId: s.project,
-            value: '12000.00',
-            currency: 'USD',
-          },
-        });
-        expect(res.status).toBe(201);
-        s.contract = res.body.id;
-      },
-    );
+    it('7a. an explicitly assigned sales representative can link a contract to the project', async () => {
+      expect(
+        (
+          await call(w.a.owner, 'PATCH', `/records/projects/${s.project}`, {
+            data: { memberUserIds: [w.a.sales.userId] },
+          })
+        ).status,
+      ).toBe(200);
+      const res = await call(w.a.sales, 'POST', '/records', {
+        module: 'contracts',
+        type: 'service_contract',
+        name: 'Website delivery agreement',
+        branchId: w.HQ,
+        data: {
+          customerId: s.customer,
+          projectId: s.project,
+          value: '12000.00',
+          currency: 'USD',
+        },
+      });
+      expect(res.status).toBe(201);
+      s.contract = res.body.id;
+    });
 
-    it.fails(
-      'KNOWN GAP (no contract execution command; contracts disabled in pilot): 7b. the contract can be executed (approved/countersigned → completed)',
-      async () => {
-        const res = await call(w.a.owner, 'PATCH', `/records/contracts/${s.contract}`, {
-          status: 'COMPLETED',
-        });
-        expect(res.status).toBe(200);
-      },
-    );
+    it('7b. contract approval and signed attachment use dedicated commands; generic completion is blocked', async () => {
+      const res = await call(w.a.owner, 'PATCH', `/records/contracts/${s.contract}`, {
+        status: 'COMPLETED',
+      });
+      expect(res.status).toBe(400);
+      expect((await call(w.a.owner, 'POST', `/contracts/${s.contract}/approve`)).status).toBe(201);
+      const document = await rec(w.a.owner, 'documents', 'Signed contract', {
+        branchId: w.HQ,
+        data: { contractId: s.contract },
+      });
+      expect(
+        (
+          await call(w.a.owner, 'POST', `/contracts/${s.contract}/upload-signed`, {
+            documentId: document.id,
+          })
+        ).status,
+      ).toBe(201);
+    });
 
     it('8a. the project cannot start without an executed contract', async () => {
       expect(
@@ -208,23 +210,41 @@ describe.sequential(
     });
 
     it('8c. an override needs contracts.override_gate and a reason, and is audited', async () => {
+      const override = await rec(w.a.owner, 'projects', 'Separate override project', {
+        branchId: w.HQ,
+        data: { customerId: s.customer, contractRequirement: 'before_work_starts' },
+      });
       expect(
         (
-          await call(w.a.admin, 'POST', `/projects/${s.project}/start`, {
+          await call(w.a.admin, 'POST', `/projects/${override.id}/start`, {
             overrideReason: 'Customer signed on paper, scan pending',
           })
         ).status,
       ).toBe(403);
-      const ok = await call(w.a.owner, 'POST', `/projects/${s.project}/start`, {
+      const ok = await call(w.a.owner, 'POST', `/projects/${override.id}/start`, {
         overrideReason: 'Customer signed on paper, scan pending',
       });
       expect(ok.status).toBe(201);
       expect(ok.body.status).toBe('IN_PROGRESS');
       expect(
         await db().auditLog.count({
-          where: { action: 'CONTRACT_GATE_OVERRIDE', resourceId: s.project },
+          where: { action: 'CONTRACT_GATE_OVERRIDE', resourceId: override.id },
         }),
       ).toBe(1);
+    });
+
+    it('8d. a countersigned contract opens the actual project gate without an override', async () => {
+      const executed = await call(w.a.owner, 'POST', `/contracts/${s.contract}/countersign`);
+      expect(executed.status).toBe(201);
+      expect(executed.body.status).toBe('COMPLETED');
+      expect(
+        (await call(w.a.projectManager, 'POST', `/projects/${s.project}/start`, {})).status,
+      ).toBe(201);
+      expect(
+        await db().auditLog.count({
+          where: { action: 'CONTRACT_GATE_OVERRIDE', resourceId: s.project },
+        }),
+      ).toBe(0);
     });
 
     it('9. invoice → payment → verification settles the invoice', async () => {
@@ -242,14 +262,11 @@ describe.sequential(
       s.payment = pay.body.id;
     });
 
-    it.fails(
-      'KNOWN GAP (no receipts; finance disabled in pilot): 10. a receipt is issued for the verified payment',
-      async () => {
-        expect(
-          (await call(w.a.accountant, 'GET', `/finance/payments/${s.payment}/receipt`)).status,
-        ).toBe(200);
-      },
-    );
+    it('10. a receipt is issued for the verified payment', async () => {
+      expect(
+        (await call(w.a.accountant, 'GET', `/finance/payments/${s.payment}/receipt`)).status,
+      ).toBe(200);
+    });
 
     it('rejects an unknown status with a sanitized 400, not a 500 (API-01)', async () => {
       const res = await call(w.a.owner, 'PATCH', `/records/customers/${s.customer}`, {
@@ -306,36 +323,36 @@ describe.sequential(
       });
       expect(res.status).toBe(403);
     });
-    it.fails(
-      'KNOWN GAP (no milestone model): milestones: a milestone can be recorded on the project',
-      async () => {
-        const res = await call(w.a.projectManager, 'POST', '/records', {
-          module: 'milestones',
-          type: 'milestone',
-          name: 'Brand guidelines approved',
-          branchId: w.HQ,
-          data: { projectId: s.project },
-        });
-        expect(res.status).toBe(201);
-      },
-    );
-    it.fails(
-      'KNOWN GAP (no expense approval command; expenses disabled in pilot): expenses: an employee submits a project expense; a manager approves it',
-      async () => {
-        const exp = await call(w.a.employee, 'POST', '/records', {
-          module: 'expenses',
-          type: 'project_expense',
-          name: 'Print proofs',
-          branchId: w.HQ,
-          data: { amount: '45.00', currency: 'USD' },
-        });
-        expect(exp.status).toBe(201);
-        const approve = await call(w.a.owner, 'PATCH', `/records/expenses/${exp.body.id}`, {
-          status: 'APPROVED',
-        });
-        expect(approve.status).toBe(200);
-      },
-    );
+    it('milestones: a milestone can be recorded on the project', async () => {
+      const res = await call(w.a.projectManager, 'POST', '/records', {
+        module: 'milestones',
+        type: 'milestone',
+        name: 'Brand guidelines approved',
+        branchId: w.HQ,
+        data: { projectId: s.project },
+      });
+      expect(res.status).toBe(201);
+    });
+    it('expenses: an employee submits an expense; only the approval command changes its state', async () => {
+      const exp = await call(w.a.employee, 'POST', '/records', {
+        module: 'expenses',
+        type: 'project_expense',
+        name: 'Print proofs',
+        branchId: w.HQ,
+        data: { amount: '45.00', currency: 'USD' },
+      });
+      expect(exp.status).toBe(201);
+      const generic = await call(w.a.owner, 'PATCH', `/records/expenses/${exp.body.id}`, {
+        status: 'APPROVED',
+      });
+      expect(generic.status).toBe(400);
+      expect((await call(w.a.employee, 'POST', `/expenses/${exp.body.id}/approve`)).status).toBe(
+        403,
+      );
+      const approve = await call(w.a.owner, 'POST', `/expenses/${exp.body.id}/approve`);
+      expect(approve.status).toBe(201);
+      expect(approve.body.status).toBe('APPROVED');
+    });
     it('completion: an authorized user completes the project through the domain command', async () => {
       expect(
         (
@@ -377,57 +394,71 @@ describe.sequential(
       expect(res.status).toBe(201);
       s.pr = res.body.id;
     });
-    it.fails(
-      'KNOWN GAP (no purchase-request approval command; procurement disabled in pilot): purchasing officer approves the purchase request',
-      async () => {
-        expect(
-          (
-            await call(w.a.purchasing, 'PATCH', `/records/purchase-requests/${s.pr}`, {
-              status: 'APPROVED',
-            })
-          ).status,
-        ).toBe(200);
-      },
-    );
+    it('purchasing officer approves the purchase request through the dedicated command', async () => {
+      expect(
+        (await call(w.a.purchasing, 'POST', `/purchase-requests/${s.pr}/approve`)).status,
+      ).toBe(201);
+    });
     it('purchasing officer issues a purchase order', async () => {
+      const item = await call(w.a.inventory, 'POST', '/inventory/items', {
+        code: `PO-${uid().slice(0, 6)}`,
+        name: 'Vinyl roll',
+        category: 'print',
+        unit: 'm',
+        currency: 'USD',
+        branchId: w.GN,
+      });
+      expect(item.status).toBe(201);
+      s.item = item.body.id;
       const res = await call(w.a.purchasing, 'POST', '/records', {
         module: 'purchase-orders',
         type: 'purchase_order',
         name: 'PO — vinyl 10 rolls',
         branchId: w.GN,
-        data: { supplierId: s.supplier },
+        data: { supplierId: s.supplier, items: [{ itemId: s.item, quantity: '10' }] },
       });
       expect(res.status).toBe(201);
       s.po = res.body.id;
+      expect((await call(w.a.purchasing, 'POST', `/purchase-orders/${s.po}/send`)).status).toBe(
+        201,
+      );
     });
-    it.fails(
-      'KNOWN GAP (no goods-receiving command): goods are received against the purchase order (purchase_orders.receive)',
-      async () => {
-        expect(
-          (await call(w.a.inventory, 'POST', `/records/purchase-orders/${s.po}/receive`, {}))
-            .status,
-        ).toBe(201);
-      },
-    );
-    it('workaround: a stock receipt can reference the purchase order', async () => {
-      const item = (
-        await call(w.a.inventory, 'POST', '/inventory/items', {
-          code: `PO-${uid().slice(0, 6)}`,
-          name: 'Vinyl roll',
-          category: 'print',
-          unit: 'm',
-          currency: 'USD',
-          branchId: w.GN,
-        })
-      ).body.id;
-      const res = await call(w.a.inventory, 'POST', `/inventory/items/${item}/movements`, {
+    it('goods receiving atomically posts the planned stock quantities', async () => {
+      s.receiptKey = uid();
+      expect(
+        (
+          await call(w.a.inventory, 'POST', `/records/purchase-orders/${s.po}/receive`, {
+            idempotencyKey: s.receiptKey,
+            items: [{ itemId: s.item, quantity: '10' }],
+          })
+        ).status,
+      ).toBe(201);
+    });
+    it('receiving retries cannot duplicate stock or bypass the purchase order quantity', async () => {
+      const retry = await call(w.a.inventory, 'POST', `/records/purchase-orders/${s.po}/receive`, {
+        idempotencyKey: s.receiptKey,
+        items: [{ itemId: s.item, quantity: '10' }],
+      });
+      expect(retry.status).toBe(201);
+      expect(
+        (await db().inventoryItem.findUniqueOrThrow({ where: { id: s.item } })).quantity.toFixed(),
+      ).toBe('10');
+      expect(
+        (
+          await call(w.a.inventory, 'POST', `/records/purchase-orders/${s.po}/receive`, {
+            idempotencyKey: s.receiptKey,
+            items: [{ itemId: s.item, quantity: '11' }],
+          })
+        ).status,
+      ).toBe(409);
+      const res = await call(w.a.inventory, 'POST', `/inventory/items/${s.item}/movements`, {
         type: 'PURCHASE_RECEIPT',
         quantity: 10,
         idempotencyKey: uid(),
         referenceType: 'purchase-order',
         referenceId: s.po,
       });
-      expect(res.status).toBe(201);
+      expect(res.status).toBe(400);
     });
   },
 );

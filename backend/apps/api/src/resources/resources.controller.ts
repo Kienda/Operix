@@ -52,11 +52,25 @@ const modules = [
   'documents',
   'notifications',
   'reports',
+  'milestones',
+  'guard-assignments',
 ];
 const modulePermissions: Record<
   string,
   { view: string[]; create: string[]; update: string[]; archive: string[] }
 > = {
+  milestones: {
+    view: ['projects.view'],
+    create: ['milestones.manage'],
+    update: ['milestones.manage'],
+    archive: ['milestones.manage'],
+  },
+  'guard-assignments': {
+    view: ['security.assignments.manage'],
+    create: ['security.assignments.manage'],
+    update: ['security.assignments.manage'],
+    archive: ['security.assignments.manage'],
+  },
   customers: {
     view: ['customers.view'],
     create: ['customers.create'],
