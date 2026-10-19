@@ -38,7 +38,8 @@ only, not completion of real jobs. API mail uses its SMTP service directly and d
 
 ## Files
 
-- `docker/backend.Dockerfile`: separate API, worker and migration targets; Node 24, pnpm 11.1.3, Linux Prisma generation.
+- `docker/backend.Dockerfile`: separate API, worker and migration targets; Node 24, pnpm 11.1.3, Linux Prisma
+  generation; distroless non-root runtime (no shell: operator commands call `node` directly).
 - `docker/web.Dockerfile`: locked npm build of the **staff pilot**, unprivileged Nginx, same-origin `/api/v1`.
 - `docker/runtime-env.cjs`: reads only the mounted service secret file; no secrets baked into image layers or Vite arguments.
 - `aws/operix-staging.template.json`: reviewable ECR/S3/OIDC/IAM/SSM resources; **do not apply without approval**.
@@ -48,9 +49,10 @@ only, not completion of real jobs. API mail uses its SMTP service directly and d
 
 ## Blockers before enabling AWS jobs
 
-1. Resolve the findings recorded in [verification](verification.md): backend dependency advisories, broader QA
-   fixture failure, browser test failure and existing formatting failures. Lint executes zero tasks and is
-   not meaningful lint coverage; introduce an actual lint baseline before staff access. Do not bypass failed checks.
+1. ~~Resolve the findings recorded in [verification](verification.md)~~ — resolved October 18: 0 registry
+   advisories, QA/browser/format gates pass, 0 HIGH/CRITICAL image findings. Still open: lint executes zero
+   tasks and is not meaningful lint coverage. Do not bypass failed checks. Current verdict and remaining
+   gates: [readiness report](../docs/pilot/READINESS_REPORT.md).
 2. Obtain the account ID and exact EC2 instance ID/instance role. Confirm SSM Agent is online and sufficiently
    recent for ENV_VAR document interpolation. No SSH keys are required by CI. No AWS credentials belong in GitHub secrets.
 3. Inspect the current shared Nginx placement, includes, certificate paths, occupied ports, Docker networks,

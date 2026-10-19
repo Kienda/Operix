@@ -48,18 +48,40 @@ class SecretTests(unittest.TestCase):
             self.assertEqual(values[0], values[1])
             self.assertNotEqual(values[0], values[2])
 
+    def test_optional_tunnel_token(self):
+        token = "eyJh" + "A" * 180
+        with tempfile.TemporaryDirectory() as directory:
+            without, with_token = Path(directory) / "a", Path(directory) / "b"
+            module.prepare(self.secret(), without)
+            self.assertFalse((without / "tunnel_token").exists())
+            module.prepare({**self.secret(), "CLOUDFLARE_TUNNEL_TOKEN": token}, with_token)
+            self.assertEqual((with_token / "tunnel_token").read_text(), token)
+            # Adding or rotating the tunnel token is not a database credential rotation.
+            self.assertEqual((without / "credential-fingerprint").read_text(),
+                             (with_token / "credential-fingerprint").read_text())
+            for bad in ["short", "has spaces " + "A" * 120]:
+                with self.assertRaises(ValueError):
+                    module.prepare({**self.secret(), "CLOUDFLARE_TUNNEL_TOKEN": bad}, Path(directory) / "c")
+            with self.assertRaises(ValueError):
+                module.prepare({**self.secret(), "UNEXPECTED": "x"}, Path(directory) / "d")
+
+
+def compose_config(*overlays):
+    env = {**os.environ, "ECR_REGISTRY": "000000000000.dkr.ecr.us-east-1.amazonaws.com",
+           "IMAGE_TAG": "a" * 40 + "-1-1", "RELEASE_SHA": "a" * 40,
+           "SECRETS_DIR": str(ROOT / "tmp/deployment-test-secrets"),
+           "APP_URL": "https://operix.globalhightech.com", "MAIL_FROM": "test@operix.test",
+           "SMTP_HOST": "smtp.test"}
+    files = [arg for name in ("compose.yml", *overlays) for arg in ("-f", str(ROOT / "deploy" / name))]
+    result = subprocess.run(["docker", "compose", "--profile", "release", "--profile", "worker-disabled",
+                             *files, "config", "--format", "json"],
+                            env=env, capture_output=True, text=True, check=True)
+    return json.loads(result.stdout)
+
 
 class DeploymentContracts(unittest.TestCase):
     def test_compose_is_private_and_scoped(self):
-        env = {**os.environ, "ECR_REGISTRY": "000000000000.dkr.ecr.us-east-1.amazonaws.com",
-               "IMAGE_TAG": "a" * 40 + "-1-1", "RELEASE_SHA": "a" * 40,
-               "SECRETS_DIR": str(ROOT / "tmp/deployment-test-secrets"),
-               "APP_URL": "https://operix.globalhightech.com", "MAIL_FROM": "test@operix.test",
-               "SMTP_HOST": "smtp.test"}
-        result = subprocess.run(["docker", "compose", "--profile", "release", "--profile", "worker-disabled",
-                                 "-f", str(ROOT / "deploy/compose.yml"), "config", "--format", "json"],
-                                env=env, capture_output=True, text=True, check=True)
-        config = json.loads(result.stdout)
+        config = compose_config()
         self.assertEqual(config["name"], "operix-staging")
         services = config["services"]
         for name, service in services.items():
@@ -75,6 +97,33 @@ class DeploymentContracts(unittest.TestCase):
         self.assertEqual(services["api"]["environment"]["SEED_DEMO_DATA"], "false")
         self.assertEqual(services["api"]["environment"]["OPERIX_MODULE_ALLOWLIST"], "core,crm,sales,projects")
         self.assertNotIn("edge", config["networks"])
+        # The gateway passes X-Forwarded-For through; trusting more than one hop lets a client
+        # choose the address used for rate limiting and audit.
+        self.assertEqual(services["api"]["environment"]["TRUST_PROXY"], "1")
+        # Only these bridges route outside; their names anchor the metadata-service block.
+        bridges = {n: c.get("driver_opts", {}).get("com.docker.network.bridge.name") for n, c in config["networks"].items()}
+        self.assertEqual({n for n, c in config["networks"].items() if not c.get("internal")}, {"ingress", "egress"})
+        self.assertEqual((bridges["ingress"], bridges["egress"]), ("opx-ingress", "opx-egress"))
+        deploy = (ROOT / "deploy/scripts/deploy.sh").read_text()
+        for bridge in ("opx-ingress", "opx-egress"):
+            self.assertIn(bridge, deploy)
+            self.assertIn(bridge, (ROOT / "deploy/systemd/operix-imds-block.service").read_text())
+        self.assertIn("-d 169.254.169.254 -j DROP", deploy)
+
+    def test_tunnel_reaches_only_the_gateway(self):
+        services = compose_config("compose.tunnel.yml")["services"]
+        tunnel = services["tunnel"]
+        self.assertNotIn("ports", tunnel)
+        self.assertEqual(list(tunnel["networks"]), ["ingress"])
+        self.assertIn("ingress", services["web"]["networks"])
+        for name in ("api", "postgres", "redis"):
+            self.assertNotIn("ingress", services[name]["networks"], name)
+        self.assertTrue(tunnel["read_only"])
+        self.assertEqual(tunnel["cap_drop"], ["ALL"])
+        self.assertIn("--token-file", tunnel["command"])
+        self.assertTrue(tunnel["image"].endswith("/operix-tunnel:" + "a" * 40 + "-1-1"))
+        dockerfile = (ROOT / "deploy/docker/tunnel.Dockerfile").read_text()
+        self.assertRegex(dockerfile, r"cloudflared:[0-9.]+@sha256:[0-9a-f]{64}")
 
     def test_ssm_accepts_no_arbitrary_command(self):
         document = json.loads((ROOT / "deploy/aws/ssm-document.json").read_text())
@@ -87,6 +136,8 @@ class DeploymentContracts(unittest.TestCase):
         for name in ["ImagesRole", "DeployRole"]:
             trust = template["Resources"][name]["Properties"]["AssumeRolePolicyDocument"]
             self.assertIn("repo:Kienda/Operix:environment:operix-", json.dumps(trust))
+        repos = {r["Properties"]["RepositoryName"] for r in template["Resources"].values() if r["Type"] == "AWS::ECR::Repository"}
+        self.assertEqual(repos, {f"operix-{n}" for n in ("api", "worker", "migrate", "web", "tunnel")})
 
 
 if __name__ == "__main__":

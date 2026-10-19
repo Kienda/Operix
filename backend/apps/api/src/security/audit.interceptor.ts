@@ -9,6 +9,21 @@ export class AuditInterceptor implements NestInterceptor {
   constructor(private readonly db: DatabaseService) {}
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    return next.handle().pipe(tap(() => { if (req.auth && !['GET','HEAD'].includes(req.method)) void this.db.auditLog.create({ data: { organizationId: req.auth.organizationId, userId: req.auth.userId, action: req.method, resource: req.path, metadata: { requestId: req.headers['x-request-id'] ?? null } } }).catch(() => undefined); }));
+    return next.handle().pipe(
+      tap(() => {
+        if (req.auth && !['GET', 'HEAD'].includes(req.method))
+          void this.db.auditLog
+            .create({
+              data: {
+                organizationId: req.auth.organizationId,
+                userId: req.auth.userId,
+                action: req.method,
+                resource: req.path,
+                metadata: { requestId: req.headers['x-request-id'] ?? null },
+              },
+            })
+            .catch(() => undefined);
+      }),
+    );
   }
 }

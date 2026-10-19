@@ -1,0 +1,35 @@
+name: Operix uptime probe
+# External check from outside AWS: TLS, gateway, API readiness and security headers.
+# Inert until the repository variable OPERIX_PUBLIC_URL (https://...) is set.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: vars.OPERIX_PUBLIC_URL != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Probe public endpoints
+        env:
+          URL: ${{ vars.OPERIX_PUBLIC_URL }}
+        run: |
+          set -euo pipefail
+          [[ "$URL" =~ ^https://[a-z0-9.-]+$ ]] || { echo 'OPERIX_PUBLIC_URL must be https://host'; exit 1; }
+          # Readiness includes a database query; retries absorb one transient blip.
+          curl --fail --silent --show-error --retry 2 --retry-delay 20 --max-time 15 "$URL/api/v1/health" | tee health.json
+          grep -q '"status":"ok"' health.json
+          headers=$(curl --fail --silent --show-error --max-time 15 -D - -o /dev/null "$URL/")
+          for header in strict-transport-security content-security-policy x-frame-options x-content-type-options; do
+            grep -qi "^$header:" <<<"$headers" || { echo "Missing security header: $header"; exit 1; }
+          done
+          # Certificate must stay valid for at least 14 days.
+          host=${URL#https://}
+          end=$(echo | openssl s_client -servername "$host" -connect "$host:443" 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+          (( $(date -d "$end" +%s) - $(date +%s) > 14 * 86400 )) || { echo "TLS certificate expires soon: $end"; exit 1; }
+          echo "Operix healthy; certificate valid until $end"

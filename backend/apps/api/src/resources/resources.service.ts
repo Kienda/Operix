@@ -139,19 +139,22 @@ export class ResourcesService {
       for (const [key, module] of Object.entries(RELATED_RECORDS))
         if (typeof data[key] === 'string') (wanted[module] ??= new Set()).add(data[key] as string);
       for (const key of RELATED_PEOPLE)
-        for (const value of [data[key]].flat())
-          if (typeof value === 'string') people.add(value);
+        for (const value of [data[key]].flat()) if (typeof value === 'string') people.add(value);
       people.add(row.createdBy);
       people.add(row.updatedBy);
     }
-    const records: Record<string, { module: string; name: string; number: string | null; status: string }> = {};
+    const records: Record<
+      string,
+      { module: string; name: string; number: string | null; status: string }
+    > = {};
     for (const [module, idSet] of Object.entries(wanted)) {
       if (!can(ctx, `${module}.view`)) continue;
       const found = await this.db.businessRecord.findMany({
         where: { AND: [recordWhere(ctx, module), { id: { in: [...idSet] } }] },
         select: { id: true, module: true, name: true, number: true, status: true },
       });
-      for (const r of found) records[r.id] = { module: r.module, name: r.name, number: r.number, status: r.status };
+      for (const r of found)
+        records[r.id] = { module: r.module, name: r.name, number: r.number, status: r.status };
     }
     const members = people.size
       ? await this.db.organizationUser.findMany({
@@ -161,7 +164,9 @@ export class ResourcesService {
       : [];
     return {
       records,
-      people: Object.fromEntries(members.map((m) => [m.userId, `${m.user.firstName} ${m.user.lastName}`])),
+      people: Object.fromEntries(
+        members.map((m) => [m.userId, `${m.user.firstName} ${m.user.lastName}`]),
+      ),
     };
   }
 
@@ -192,7 +197,8 @@ export class ResourcesService {
     }))
       if (value !== undefined && !uuid.test(value)) throw new BadRequestException(`Invalid ${key}`);
     const assignee = q.assignee === 'me' ? ctx.userId : q.assignee;
-    if (assignee !== undefined && !uuid.test(assignee)) throw new BadRequestException('Invalid assignee');
+    if (assignee !== undefined && !uuid.test(assignee))
+      throw new BadRequestException('Invalid assignee');
     const take = Math.min(Math.max(q.limit || 25, 1), 100),
       skip = (Math.max(q.page || 1, 1) - 1) * take;
     // Filters only ever narrow the caller's policy scope (first AND term).
@@ -316,19 +322,22 @@ export class ResourcesService {
     validateSensitiveWrite(ctx, module, input.data ?? {});
     const commandOnly = (COMMAND_FIELDS[module] ?? []).filter((key) => key in (input.data ?? {}));
     if (commandOnly.length)
-      throw new BadRequestException(`${commandOnly.join(', ')} can only change through a status command`);
-    if (module === 'tasks' && ctx.dataScope === 'self') {
-      // Assignees report progress; planning fields stay with the planner.
-      if (input.name !== undefined || input.data !== undefined)
-        throw new ForbiddenException('You can only update the status of your tasks');
-      if (input.status && !SELF_EDITABLE_TASK_STATUSES.includes(input.status))
-        throw new ForbiddenException('You cannot set this task status');
-    }
+      throw new BadRequestException(
+        `${commandOnly.join(', ')} can only change through a status command`,
+      );
     return serializable(this.db, async (tx) => {
       const current = await tx.businessRecord.findFirst({
         where: { AND: [recordWhere(ctx, module), { id }] },
       });
+      // Visibility first: an invisible record is "not found", never "forbidden".
       if (!current) throw new NotFoundException('Record not found');
+      if (module === 'tasks' && ctx.dataScope === 'self') {
+        // Assignees report progress; planning fields stay with the planner.
+        if (input.name !== undefined || input.data !== undefined)
+          throw new ForbiddenException('You can only update the status of your tasks');
+        if (input.status && !SELF_EDITABLE_TASK_STATUSES.includes(input.status))
+          throw new ForbiddenException('You cannot set this task status');
+      }
       if (input.status && input.status !== current.status && protectedWorkflows.has(module))
         throw new BadRequestException('Protected state transition requires a domain command');
       if (

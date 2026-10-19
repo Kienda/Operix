@@ -1,0 +1,15 @@
+# Re-applies the Operix-only metadata-service block at boot, before restarted Operix
+# containers can reach the shared EC2 instance role. deploy.sh applies the same rules
+# on every release. Matches only Operix's named bridges; Tontin is unaffected.
+[Unit]
+Description=Deny EC2 instance metadata to Operix containers
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'for b in opx-ingress opx-egress; do iptables -C DOCKER-USER -i "$b" -d 169.254.169.254 -j DROP 2>/dev/null || iptables -I DOCKER-USER -i "$b" -d 169.254.169.254 -j DROP; done'
+
+[Install]
+WantedBy=multi-user.target

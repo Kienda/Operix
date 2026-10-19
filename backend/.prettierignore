@@ -1,0 +1,6 @@
+# Generated files are never formatted.
+pnpm-lock.yaml
+**/dist
+**/node_modules
+**/.turbo
+**/.tmp-build

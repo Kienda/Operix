@@ -58,10 +58,7 @@ export const decimalString = (opts?: { min?: number; allowNegative?: boolean }) 
     .union([z.string(), z.number()])
     .transform((v) => (typeof v === 'number' ? v.toString() : v.trim()))
     .refine((v) => /^-?\d{1,15}(\.\d{1,6})?$/.test(v), 'Must be a decimal number')
-    .refine(
-      (v) => (opts?.allowNegative ? true : !v.startsWith('-')),
-      'Must not be negative',
-    )
+    .refine((v) => (opts?.allowNegative ? true : !v.startsWith('-')), 'Must not be negative')
     .refine(
       (v) => (opts?.min === undefined ? true : Number(v) >= opts.min),
       `Must be at least ${opts?.min ?? 0}`,

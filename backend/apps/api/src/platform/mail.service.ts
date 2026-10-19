@@ -13,7 +13,10 @@ export interface OutgoingMail {
 }
 
 const escape = (value: string) =>
-  value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  value.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  );
 
 /** Minimal, accessible transactional layout; every interpolated value is escaped. */
 export function actionMail(input: {
@@ -47,10 +50,31 @@ export class MailService {
       host: mail.host,
       port: mail.port,
       secure: mail.secure,
-      requireTLS: config().production,
+      requireTLS: !(
+        process.env.NODE_ENV === 'test' &&
+        ['localhost', '127.0.0.1', '::1'].includes(mail.host ?? '')
+      ),
+      tls: { rejectUnauthorized: true, minVersion: 'TLSv1.2' },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 30000,
+      logger: false,
+      debug: false,
       auth: mail.user ? { user: mail.user, pass: mail.password } : undefined,
     });
     return this.transport;
+  }
+
+  /** Checks authentication and TLS without sending a message. */
+  async verify(): Promise<void> {
+    if (config().mail.driver !== 'smtp')
+      throw new ServiceUnavailableException('SMTP is not configured');
+    try {
+      await this.transporter().verify();
+    } catch {
+      logEvent('error', 'mail_connectivity_failed');
+      throw new ServiceUnavailableException('SMTP connectivity check failed');
+    }
   }
 
   /** Resolves only after the provider accepted the message. */
@@ -64,19 +88,21 @@ export class MailService {
       return;
     }
     try {
-      await this.transporter().sendMail({
+      const result = await this.transporter().sendMail({
         from: mail.from,
         to: message.to,
         subject: message.subject,
         text: message.text,
         html: message.html,
       });
+      if (!result.accepted?.length || result.rejected?.length)
+        throw new Error('Recipient not accepted');
       logEvent('info', 'mail_sent', { to: message.to, category: message.category });
-    } catch (error) {
+    } catch {
       logEvent('error', 'mail_failed', {
         to: message.to,
         category: message.category,
-        reason: (error as Error).message,
+        reason: 'smtp_delivery_failed',
       });
       throw new ServiceUnavailableException('Email could not be delivered; try again later');
     }

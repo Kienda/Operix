@@ -12,8 +12,12 @@ from urllib.parse import quote
 
 def prepare(secret, target):
     required = {"DB_ADMIN_PASSWORD", "DB_MIGRATE_PASSWORD", "DB_APP_PASSWORD", "REDIS_PASSWORD", "JWT_ACCESS_SECRET", "SMTP_USER", "SMTP_PASSWORD"}
-    if set(secret) != required or any(not isinstance(v, str) or not v for v in secret.values()):
+    optional = {"CLOUDFLARE_TUNNEL_TOKEN"}
+    if not required <= set(secret) <= required | optional or any(not isinstance(v, str) or not v for v in secret.values()):
         raise ValueError("Secret must have exactly the documented nonempty fields")
+    tunnel = secret.get("CLOUDFLARE_TUNNEL_TOKEN")
+    if tunnel is not None and not re.fullmatch(r"[A-Za-z0-9+/=_-]{100,4096}", tunnel):
+        raise ValueError("Tunnel token must be the connector token issued by Cloudflare")
     for key in required - {"SMTP_USER", "SMTP_PASSWORD"}:
         if not re.fullmatch(r"[A-Fa-f0-9]{64,128}", secret[key]):
             raise ValueError("Database, Redis and JWT values must be independently generated hex secrets")
@@ -35,6 +39,8 @@ def prepare(secret, target):
     save("api.json", json.dumps({"DATABASE_URL": url("operix_app", "DB_APP_PASSWORD"), **{k: secret[k] for k in ["JWT_ACCESS_SECRET", "SMTP_USER", "SMTP_PASSWORD"]}}))
     save("migrate.json", json.dumps({"DATABASE_URL": url("operix_migrator", "DB_MIGRATE_PASSWORD")}))
     save("worker.json", json.dumps({"DATABASE_URL": url("operix_app", "DB_APP_PASSWORD"), "REDIS_URL": f"redis://:{secret['REDIS_PASSWORD']}@redis:6379/0"}))
+    if tunnel is not None:
+        save("tunnel_token", tunnel)
     # Detect password rotations before touching existing persistent databases.
     stable = {k: secret[k] for k in sorted(required) if k.startswith("DB_") or k == "REDIS_PASSWORD"}
     save("credential-fingerprint", hashlib.sha256(json.dumps(stable, sort_keys=True).encode()).hexdigest())

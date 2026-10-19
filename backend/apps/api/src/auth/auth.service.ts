@@ -41,7 +41,10 @@ export class AuthService {
     ipAddress?: string,
   ) {
     const user = await this.db.user.findUnique({ where: { email: input.email.toLowerCase() } });
-    const passwordOk = await argon2.verify(user?.passwordHash ?? (await DUMMY_HASH), input.password);
+    const passwordOk = await argon2.verify(
+      user?.passwordHash ?? (await DUMMY_HASH),
+      input.password,
+    );
     if (!user || user.status !== 'ACTIVE' || !passwordOk) {
       logEvent('warn', 'login_failed', { reason: 'credentials', ip: ipAddress });
       throw new UnauthorizedException('Invalid credentials');
@@ -168,7 +171,10 @@ export class AuthService {
     const membership = session.organizationId
       ? await this.db.organizationUser.findUnique({
           where: {
-            organizationId_userId: { organizationId: session.organizationId, userId: session.userId },
+            organizationId_userId: {
+              organizationId: session.organizationId,
+              userId: session.userId,
+            },
           },
         })
       : null;
@@ -290,10 +296,14 @@ export class AuthService {
   async mfaDisable(ctx: AuthContext, password: string, code?: string) {
     if (ctx.roleKey) {
       const membership = await this.db.organizationUser.findUniqueOrThrow({
-        where: { organizationId_userId: { organizationId: ctx.organizationId, userId: ctx.userId } },
+        where: {
+          organizationId_userId: { organizationId: ctx.organizationId, userId: ctx.userId },
+        },
         include: { organization: true },
       });
-      const settings = membership.organization.settings as { security?: { mfaRequiredRoleKeys?: unknown } };
+      const settings = membership.organization.settings as {
+        security?: { mfaRequiredRoleKeys?: unknown };
+      };
       const required = settings?.security?.mfaRequiredRoleKeys;
       if (Array.isArray(required) && required.includes(ctx.roleKey))
         throw new ForbiddenException('Your role requires MFA; it cannot be turned off');
@@ -371,8 +381,12 @@ export class AuthService {
           footer: 'If you did not request this, ignore this email. Your password stays unchanged.',
         }),
       });
-    } catch {
-      // Same response either way; delivery failures are logged by MailService.
+    } catch (error) {
+      await this.db.passwordResetToken.updateMany({
+        where: { tokenHash: hashToken(rawToken), usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      throw error;
     }
     return { success: true };
   }
@@ -398,7 +412,12 @@ export class AuthService {
         data: { revokedAt: new Date() },
       });
       await tx.auditLog.create({
-        data: { userId: token.userId, action: 'PASSWORD_RESET', resource: 'user', resourceId: token.userId },
+        data: {
+          userId: token.userId,
+          action: 'PASSWORD_RESET',
+          resource: 'user',
+          resourceId: token.userId,
+        },
       });
       return { success: true };
     });
@@ -450,11 +469,12 @@ export class AuthService {
           after: { email, roleId: role.id, roleKey: role.systemKey, branchIds },
         },
       });
-      const organization = await tx.organization.findUniqueOrThrow({ where: { id: organizationId } });
+      const organization = await tx.organization.findUniqueOrThrow({
+        where: { id: organizationId },
+      });
       return { invitation, organization, role };
     });
     const inviteUrl = `${config().appUrl}/#/accept-invite?token=${rawToken}`;
-    let delivered = true;
     try {
       await this.mail.send({
         to: email,
@@ -468,14 +488,18 @@ export class AuthService {
           footer: 'If you were not expecting this invitation, you can ignore this email.',
         }),
       });
-    } catch {
-      delivered = false;
+    } catch (error) {
+      await this.db.invitation.updateMany({
+        where: { id: invitation.id, acceptedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      throw error;
     }
     return {
       id: invitation.id,
       email: invitation.email,
       expiresAt: invitation.expiresAt,
-      delivered,
+      delivered: true,
       // Bearer link exposure to the inviter is a deliberate non-production convenience.
       ...(config().inviteLinkInResponse ? { inviteUrl } : {}),
     };

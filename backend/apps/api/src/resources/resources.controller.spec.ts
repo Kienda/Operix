@@ -14,9 +14,9 @@ const request = (permissions: string[]) =>
       dataScope: 'all',
       customerId: null,
       employeeId: null,
-  roleKey: null,
-  isOwner: false,
-  mfaEnrollmentRequired: false,
+      roleKey: null,
+      isOwner: false,
+      mfaEnrollmentRequired: false,
     },
   }) as never;
 

@@ -61,6 +61,7 @@ test('owner activates from the emailed link and must enroll MFA before using Ope
   await nav(page).getByRole('link', { name: 'Dashboard', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Welcome, Mariama' })).toBeVisible();
   await expect(page.getByText(/Invoicing, payments, inventory and HR are not enabled/)).toBeVisible();
+  await page.screenshot({ path: 'e2e/evidence/01-owner-dashboard.png', fullPage: true });
 });
 
 test('owner invites Guinea staff through the Team screen (email only, no links shown)', async () => {
@@ -81,6 +82,7 @@ test('owner invites Guinea staff through the Team screen (email only, no links s
   const pending = page.locator('section', { hasText: 'Pending invitations' });
   await expect(pending.getByText(people.sales.email)).toBeVisible();
   await expect(pending.getByText(people.employee.email)).toBeVisible();
+  await page.screenshot({ path: 'e2e/evidence/02-team-invitations.png', fullPage: true });
 });
 
 test('Guinea sales rep creates a customer and a GNF quotation with server-computed totals', async ({ browser }) => {
@@ -119,6 +121,7 @@ test('Guinea sales rep creates a customer and a GNF quotation with server-comput
   await page.getByLabel('Quantity').nth(1).fill('1.5');
   await page.getByLabel(/Unit price/).nth(1).fill('2000');
   await expect(page.locator('.px-totals .px-total')).toHaveText('534,540 GNF');
+  await page.screenshot({ path: 'e2e/evidence/03-quotation-editor.png', fullPage: true });
   await page.getByRole('button', { name: 'Save draft' }).click();
   await expect(page.getByRole('heading', { name: /QUO-\d{4}-0001 · Storefront signage/ })).toBeVisible();
   await expect(page.locator('.px-totals .px-total')).toHaveText('534,540 GNF');
@@ -127,6 +130,7 @@ test('Guinea sales rep creates a customer and a GNF quotation with server-comput
   await page.getByRole('button', { name: 'Mark as sent' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Mark as sent' }).click();
   await expect(page.getByText('Sent — awaiting decision')).toBeVisible();
+  await page.screenshot({ path: 'e2e/evidence/04-quotation-sent.png', fullPage: true });
   await expect(page.getByRole('link', { name: 'Edit' })).toHaveCount(0);
 });
 
@@ -173,6 +177,7 @@ test('employee activates and only sees their own task, which they can progress',
   await task.getByLabel('Priority').selectOption('high');
   await task.getByRole('button', { name: 'Save' }).click();
   await expect(owner.locator('.px-list b', { hasText: 'Print the banners' })).toBeVisible();
+  await owner.screenshot({ path: 'e2e/evidence/05-project-with-task.png', fullPage: true });
 
   const menu = nav(page);
   await expect(menu.getByRole('link')).toHaveText(['Dashboard', 'Tasks', 'My account']);
@@ -182,6 +187,7 @@ test('employee activates and only sees their own task, which they can progress',
   await nav(page).getByRole('link', { name: 'Tasks', exact: true }).click();
   const row = page.getByRole('row', { name: /Print the banners/ });
   await expect(row).toBeVisible();
+  await page.screenshot({ path: 'e2e/evidence/06-employee-tasks.png', fullPage: true });
   await row.getByRole('combobox').selectOption('IN_PROGRESS');
   await expect(page.getByText('“Print the banners” updated.')).toBeVisible();
   await row.getByRole('combobox').selectOption('COMPLETED');
@@ -210,6 +216,7 @@ test('dialogs trap focus and close with Escape; French is available', async () =
   await expect(page.getByRole('button', { name: 'New customer' })).toBeFocused();
   await page.getByLabel('Language').selectOption('fr');
   await expect(page.getByRole('heading', { name: 'Clients' })).toBeVisible();
+  await page.screenshot({ path: 'e2e/evidence/07-french-customers.png', fullPage: true });
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   await page.getByLabel('Langue').selectOption('en');
 });
@@ -221,9 +228,17 @@ test('phone layout: navigation drawer and readable task cards', async ({ browser
   await expect(page.getByRole('heading', { name: 'Welcome, Ibrahima' })).toBeVisible();
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(scrollWidth).toBeLessThanOrEqual(390);
+  await page.screenshot({ path: 'e2e/evidence/08-mobile-dashboard.png' });
   await page.getByRole('button', { name: 'Open menu' }).click();
+  await page.waitForTimeout(400); // drawer transition, for the evidence screenshot only
+  await page.screenshot({ path: 'e2e/evidence/09-mobile-menu.png' });
   await nav(page).getByRole('link', { name: 'Tasks', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Tasks' })).toBeVisible();
+  // Navigating closes the drawer; a closed drawer is hidden from assistive tech and focus.
+  await expect(nav(page)).toBeHidden();
+  await page.getByLabel('Status', { exact: true }).selectOption('COMPLETED');
+  await expect(page.getByRole('row', { name: /Print the banners/ })).toBeVisible();
+  await page.screenshot({ path: 'e2e/evidence/10-mobile-task-cards.png', fullPage: true });
   await page.getByRole('button', { name: 'Open menu' }).click();
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('heading', { name: 'Sign in to Operix' })).toBeVisible();

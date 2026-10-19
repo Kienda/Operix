@@ -8,8 +8,10 @@ declare global {
   var operixPrisma: PrismaClient | undefined;
 }
 
-export const prisma = globalThis.operixPrisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
-});
+export const prisma =
+  globalThis.operixPrisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+  });
 
 if (process.env.NODE_ENV !== 'production') globalThis.operixPrisma = prisma;

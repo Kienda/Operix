@@ -36,7 +36,11 @@ export class WorkspaceController {
       ['customers', 'Active customers', ['ACTIVE']],
       ['quotations', 'Quotations awaiting decision', ['PENDING']],
       ['projects', 'Projects in progress', ['ACTIVE', 'IN_PROGRESS']],
-      ['tasks', own ? 'My open tasks' : 'Open tasks', ['DRAFT', 'PENDING', 'ACTIVE', 'IN_PROGRESS']],
+      [
+        'tasks',
+        own ? 'My open tasks' : 'Open tasks',
+        ['DRAFT', 'PENDING', 'ACTIVE', 'IN_PROGRESS'],
+      ],
     ] as const) {
       if (can(ctx, module + '.view'))
         metrics.push({

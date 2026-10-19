@@ -48,13 +48,11 @@ export class ApiExceptionFilter implements ExceptionFilter {
               : 'unknown',
         stack: error instanceof Error ? error.stack?.split('\n').slice(0, 8).join('\n') : undefined,
       });
-    response
-      .status(status)
-      .json({
-        success: false,
-        error: { code: status === 500 ? 'INTERNAL_ERROR' : `HTTP_${status}`, ...extra, message },
-        requestId: response.req.headers['x-request-id'] ?? null,
-        timestamp: new Date().toISOString(),
-      });
+    response.status(status).json({
+      success: false,
+      error: { code: status === 500 ? 'INTERNAL_ERROR' : `HTTP_${status}`, ...extra, message },
+      requestId: response.req.headers['x-request-id'] ?? null,
+      timestamp: new Date().toISOString(),
+    });
   }
 }

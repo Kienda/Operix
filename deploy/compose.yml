@@ -88,7 +88,10 @@ services:
       SEED_DEMO_DATA: 'false'
       APP_URL: ${APP_URL:?set APP_URL}
       CORS_ORIGINS: ${APP_URL}
-      TRUST_PROXY: '2'
+      # Exactly one trusted hop (the gateway). It passes X-Forwarded-For through unchanged, so
+      # the right-most entry is the one the edge (Cloudflare or host Nginx) appended: the real
+      # client. Trusting 2 would hand the client-supplied entry to rate limiting and audit.
+      TRUST_PROXY: '1'
       SWAGGER_ENABLED: 'false'
       INVITE_LINK_IN_RESPONSE: 'false'
       REQUEST_LOGGING: 'true'
@@ -154,11 +157,15 @@ services:
 networks:
   # The gateway needs an ordinary bridge for host-loopback port publishing.
   # Data/application bridges remain internal; only web joins this network.
-  ingress: {}
+  # Fixed bridge names on the two networks with an outside route, so a host DOCKER-USER rule
+  # can deny the EC2 metadata service (and the shared instance role) to Operix containers only.
+  ingress:
+    driver_opts: {com.docker.network.bridge.name: opx-ingress}
   application: {internal: true}
   data: {internal: true}
   queue: {internal: true}
-  egress: {}
+  egress:
+    driver_opts: {com.docker.network.bridge.name: opx-egress}
 volumes:
   postgres_data: {}
   redis_data: {}

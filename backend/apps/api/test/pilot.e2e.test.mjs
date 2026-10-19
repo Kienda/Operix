@@ -505,6 +505,8 @@ describe('Projects and tasks', () => {
     expect(ids(await call('GET', '/records/tasks', s('employeeGN')))).toEqual([taskGN.id]);
     expect((await call('GET', `/records/tasks/${taskOther.id}`, s('employeeGN'))).status).toBe(404);
     expect((await call('GET', `/records/tasks/${taskGN.id}`, s('employeeUS'))).status).toBe(404);
+    // Field restrictions never run before visibility: no 403 that would confirm the record exists.
+    expect((await call('PATCH', `/records/tasks/${taskGN.id}`, s('employeeUS'), { name: 'x' })).status).toBe(404);
     const t = `/records/tasks/${taskGN.id}`;
     expect((await call('PATCH', t, s('employeeGN'), { status: 'IN_PROGRESS' })).body.status).toBe('IN_PROGRESS');
     expect((await call('PATCH', t, s('employeeGN'), { data: { dueDate: '2027-01-01' } })).status).toBe(403);

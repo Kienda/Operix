@@ -9,6 +9,9 @@ const production = {
   CORS_ORIGINS: 'https://operix.example.org',
   MAIL_DRIVER: 'smtp',
   SMTP_HOST: 'email-smtp.us-east-1.amazonaws.com',
+  SMTP_USER: 'mock@operix.test',
+  SMTP_PASSWORD: 'mock-password',
+  MAIL_FROM: 'Operix <mock@operix.test>',
   OPERIX_MODULE_ALLOWLIST: 'core,crm,sales,projects',
 };
 
@@ -23,8 +26,16 @@ describe('runtime configuration', () => {
   });
 
   it.each([
+    ['missing SMTP password', { SMTP_PASSWORD: '' }, /SMTP_PASSWORD/],
+    ['missing SMTP user', { SMTP_USER: '' }, /SMTP_USER/],
+    ['missing sender', { MAIL_FROM: '' }, /MAIL_FROM/],
+    ['Google implicit TLS', { SMTP_HOST: 'smtp.gmail.com', SMTP_SECURE: 'true' }, /STARTTLS/],
     ['missing JWT secret', { JWT_ACCESS_SECRET: '' }, /JWT_ACCESS_SECRET/],
-    ['placeholder JWT secret', { JWT_ACCESS_SECRET: 'dev-only-change-me-dev-only-change-me' }, /JWT_ACCESS_SECRET/],
+    [
+      'placeholder JWT secret',
+      { JWT_ACCESS_SECRET: 'dev-only-change-me-dev-only-change-me' },
+      /JWT_ACCESS_SECRET/,
+    ],
     ['plain-http app URL', { APP_URL: 'http://operix.example.org' }, /APP_URL/],
     ['log-only email', { MAIL_DRIVER: 'log' }, /MAIL_DRIVER/],
     ['no module ceiling', { OPERIX_MODULE_ALLOWLIST: '' }, /OPERIX_MODULE_ALLOWLIST/],

@@ -25,15 +25,19 @@ describe('GHT pilot role catalog', () => {
 
   it('never grants posting, payroll, HR or platform capabilities', () => {
     const all = PILOT_ROLES.flatMap((r) => r.permissions);
-    expect(all.some((p) => /^(invoices|payments|inventory|payroll|employees|platform)\./.test(p))).toBe(
-      false,
-    );
+    expect(
+      all.some((p) => /^(invoices|payments|inventory|payroll|employees|platform)\./.test(p)),
+    ).toBe(false);
   });
 
   it('keeps the employee to its own tasks', () => {
     const employee = getPilotRole('ght_employee')!;
     expect(employee.dataScope).toBe('self');
-    expect([...employee.permissions].sort()).toEqual(['organization.view', 'tasks.update', 'tasks.view']);
+    expect([...employee.permissions].sort()).toEqual([
+      'organization.view',
+      'tasks.update',
+      'tasks.view',
+    ]);
   });
 
   it('removes a granted capability once its module is disabled', () => {
