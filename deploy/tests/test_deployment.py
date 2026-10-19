@@ -147,9 +147,12 @@ class DeploymentContracts(unittest.TestCase):
             self.assertTrue("allowedPattern" in param or "allowedValues" in param)
         template = json.loads((ROOT / "deploy/aws/operix-staging.template.json").read_text())
         self.assertFalse(any(r["Type"] in ["AWS::EC2::Instance", "AWS::Route53::RecordSet"] for r in template["Resources"].values()))
-        for name in ["ImagesRole", "DeployRole"]:
+        for name, environment in [("ImagesRole", "operix-images"), ("DeployRole", "operix-staging")]:
             trust = template["Resources"][name]["Properties"]["AssumeRolePolicyDocument"]
-            self.assertIn("repo:Kienda/Operix:environment:operix-", json.dumps(trust))
+            self.assertEqual(trust["Statement"][0]["Condition"], {"StringEquals": {
+                "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                "token.actions.githubusercontent.com:sub": f"repo:Kienda@62873841/Operix@1423912038:environment:{environment}",
+            }})
         repos = {r["Properties"]["RepositoryName"] for r in template["Resources"].values() if r["Type"] == "AWS::ECR::Repository"}
         self.assertEqual(repos, {f"operix-{n}" for n in ("api", "worker", "migrate", "web", "tunnel")})
 
