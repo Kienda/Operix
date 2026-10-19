@@ -5,7 +5,7 @@
   "description": "Operix backend — multi-tenant business operations platform API, worker and shared packages. Global High Tech LLC.",
   "packageManager": "pnpm@11.1.3",
   "engines": {
-    "node": ">=20.11.0"
+    "node": "^22.12.0 || >=24.0.0"
   },
   "scripts": {
     "build": "turbo run build",

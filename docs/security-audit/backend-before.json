@@ -1,0 +1,1076 @@
+{
+  "advisories": {
+    "1102341": {
+      "findings": [
+        {
+          "version": "0.21.5",
+          "paths": [
+            "apps__api>vitest>@vitest/mocker>vite>esbuild",
+            "apps__api>vitest>vite>esbuild",
+            "apps__api>vitest>vite-node>vite>esbuild",
+            "apps__worker>vitest>@vitest/mocker>vite>esbuild",
+            "apps__worker>vitest>vite>esbuild",
+            "apps__worker>vitest>vite-node>vite>esbuild",
+            "packages__config>vitest>@vitest/mocker>vite>esbuild",
+            "packages__config>vitest>vite>esbuild",
+            "packages__config>vitest>vite-node>vite>esbuild",
+            "packages__permissions>vitest>@vitest/mocker>vite>esbuild",
+            "packages__permissions>vitest>vite>esbuild",
+            "packages__permissions>vitest>vite-node>vite>esbuild",
+            "packages__validation>vitest>@vitest/mocker>vite>esbuild",
+            "packages__validation>vitest>vite>esbuild",
+            "packages__validation>vitest>vite-node>vite>esbuild"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1102341,
+      "title": "esbuild enables any website to send any requests to the development server and read the response",
+      "module_name": "esbuild",
+      "vulnerable_versions": "<=0.24.2",
+      "patched_versions": ">=0.24.3",
+      "severity": "moderate",
+      "cwe": "CWE-346",
+      "github_advisory_id": "GHSA-67mh-4wv8-2f99",
+      "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99"
+    },
+    "1116229": {
+      "findings": [
+        {
+          "version": "5.4.21",
+          "paths": [
+            "apps__api>vitest>@vitest/mocker>vite",
+            "apps__api>vitest>vite",
+            "apps__api>vitest>vite-node>vite",
+            "apps__worker>vitest>@vitest/mocker>vite",
+            "apps__worker>vitest>vite",
+            "apps__worker>vitest>vite-node>vite",
+            "packages__config>vitest>@vitest/mocker>vite",
+            "packages__config>vitest>vite",
+            "packages__config>vitest>vite-node>vite",
+            "packages__permissions>vitest>@vitest/mocker>vite",
+            "packages__permissions>vitest>vite",
+            "packages__permissions>vitest>vite-node>vite",
+            "packages__validation>vitest>@vitest/mocker>vite",
+            "packages__validation>vitest>vite",
+            "packages__validation>vitest>vite-node>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1116229,
+      "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+      "module_name": "vite",
+      "vulnerable_versions": "<=6.4.1",
+      "patched_versions": ">=6.4.2",
+      "severity": "moderate",
+      "cwe": "CWE-22, CWE-200",
+      "github_advisory_id": "GHSA-4w7w-66w2-5vf9",
+      "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9"
+    },
+    "1120784": {
+      "findings": [
+        {
+          "version": "5.4.21",
+          "paths": [
+            "apps__api>vitest>@vitest/mocker>vite",
+            "apps__api>vitest>vite",
+            "apps__api>vitest>vite-node>vite",
+            "apps__worker>vitest>@vitest/mocker>vite",
+            "apps__worker>vitest>vite",
+            "apps__worker>vitest>vite-node>vite",
+            "packages__config>vitest>@vitest/mocker>vite",
+            "packages__config>vitest>vite",
+            "packages__config>vitest>vite-node>vite",
+            "packages__permissions>vitest>@vitest/mocker>vite",
+            "packages__permissions>vitest>vite",
+            "packages__permissions>vitest>vite-node>vite",
+            "packages__validation>vitest>@vitest/mocker>vite",
+            "packages__validation>vitest>vite",
+            "packages__validation>vitest>vite-node>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1120784,
+      "title": "launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows",
+      "module_name": "vite",
+      "vulnerable_versions": "<=6.4.2",
+      "patched_versions": ">=6.4.3",
+      "severity": "moderate",
+      "cwe": "CWE-73, CWE-522",
+      "github_advisory_id": "GHSA-v6wh-96g9-6wx3",
+      "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3"
+    },
+    "1123525": {
+      "findings": [
+        {
+          "version": "5.4.21",
+          "paths": [
+            "apps__api>vitest>@vitest/mocker>vite",
+            "apps__api>vitest>vite",
+            "apps__api>vitest>vite-node>vite",
+            "apps__worker>vitest>@vitest/mocker>vite",
+            "apps__worker>vitest>vite",
+            "apps__worker>vitest>vite-node>vite",
+            "packages__config>vitest>@vitest/mocker>vite",
+            "packages__config>vitest>vite",
+            "packages__config>vitest>vite-node>vite",
+            "packages__permissions>vitest>@vitest/mocker>vite",
+            "packages__permissions>vitest>vite",
+            "packages__permissions>vitest>vite-node>vite",
+            "packages__validation>vitest>@vitest/mocker>vite",
+            "packages__validation>vitest>vite",
+            "packages__validation>vitest>vite-node>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1123525,
+      "title": "vite: `server.fs.deny` bypass on Windows alternate paths",
+      "module_name": "vite",
+      "vulnerable_versions": "<=6.4.2",
+      "patched_versions": ">=6.4.3",
+      "severity": "high",
+      "cwe": "CWE-22, CWE-200",
+      "github_advisory_id": "GHSA-fx2h-pf6j-xcff",
+      "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff"
+    },
+    "1139427": {
+      "findings": [
+        {
+          "version": "3.3.17",
+          "paths": [
+            "apps__api>vitest>@vitest/mocker>vite>postcss>nanoid",
+            "apps__api>vitest>vite>postcss>nanoid",
+            "apps__api>vitest>vite-node>vite>postcss>nanoid",
+            "apps__worker>vitest>@vitest/mocker>vite>postcss>nanoid",
+            "apps__worker>vitest>vite>postcss>nanoid",
+            "apps__worker>vitest>vite-node>vite>postcss>nanoid",
+            "packages__config>vitest>@vitest/mocker>vite>postcss>nanoid",
+            "packages__config>vitest>vite>postcss>nanoid",
+            "packages__config>vitest>vite-node>vite>postcss>nanoid",
+            "packages__permissions>vitest>@vitest/mocker>vite>postcss>nanoid",
+            "packages__permissions>vitest>vite>postcss>nanoid",
+            "packages__permissions>vitest>vite-node>vite>postcss>nanoid",
+            "packages__validation>vitest>@vitest/mocker>vite>postcss>nanoid",
+            "packages__validation>vitest>vite>postcss>nanoid",
+            "packages__validation>vitest>vite-node>vite>postcss>nanoid"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1139427,
+      "title": "nanoid: custom generators can loop indefinitely when size is zero",
+      "module_name": "nanoid",
+      "vulnerable_versions": "<3.3.18",
+      "patched_versions": ">=3.3.18",
+      "severity": "high",
+      "cwe": "CWE-835",
+      "github_advisory_id": "GHSA-2v37-7h3g-55p8",
+      "url": "https://github.com/advisories/GHSA-2v37-7h3g-55p8"
+    },
+    "1139509": {
+      "findings": [
+        {
+          "version": "5.2.1",
+          "paths": [
+            "apps__api>@nestjs/swagger>js-yaml"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1139509,
+      "title": "js-yaml: Exponential parsing time in flow collections leads to denial of service",
+      "module_name": "js-yaml",
+      "vulnerable_versions": ">=5.0.0 <=5.2.1",
+      "patched_versions": ">=5.2.2",
+      "severity": "high",
+      "cwe": "CWE-407",
+      "github_advisory_id": "GHSA-pm4m-ph32-ghv5",
+      "url": "https://github.com/advisories/GHSA-pm4m-ph32-ghv5"
+    },
+    "1139528": {
+      "findings": [
+        {
+          "version": "2.1.9",
+          "paths": [
+            "apps__api>vitest",
+            "apps__worker>vitest",
+            "packages__config>vitest",
+            "packages__permissions>vitest",
+            "packages__validation>vitest"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1139528,
+      "title": "When Vitest UI server is listening, arbitrary file can be read and executed",
+      "module_name": "vitest",
+      "vulnerable_versions": "<3.2.6",
+      "patched_versions": ">=3.2.6",
+      "severity": "critical",
+      "cwe": "CWE-22, CWE-862",
+      "github_advisory_id": "GHSA-5xrq-8626-4rwp",
+      "url": "https://github.com/advisories/GHSA-5xrq-8626-4rwp"
+    },
+    "1145093": {
+      "findings": [
+        {
+          "version": "7.1.5",
+          "paths": [
+            "packages__database>@prisma/client>prisma>@prisma/config>deepmerge-ts",
+            "packages__database>prisma>@prisma/config>deepmerge-ts"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1145093,
+      "title": "DeepmergeTS has stack exhaustion when merging recursive object graphs",
+      "module_name": "deepmerge-ts",
+      "vulnerable_versions": "<8.0.0",
+      "patched_versions": ">=8.0.0",
+      "severity": "high",
+      "cwe": "CWE-674",
+      "github_advisory_id": "GHSA-ggr8-5vv4-36mx",
+      "url": "https://github.com/advisories/GHSA-ggr8-5vv4-36mx"
+    },
+    "1158506": {
+      "findings": [
+        {
+          "version": "6.15.3",
+          "paths": [
+            "apps__api>@nestjs/core>@nestjs/platform-express>express>body-parser>qs",
+            "apps__api>@nestjs/core>@nestjs/platform-express>express>qs",
+            "apps__api>@nestjs/platform-express>express>body-parser>qs",
+            "apps__api>@nestjs/platform-express>express>qs",
+            "apps__api>@nestjs/swagger>@nestjs/core>@nestjs/platform-express>express>body-parser>qs",
+            "apps__api>@nestjs/swagger>@nestjs/core>@nestjs/platform-express>express>qs",
+            "apps__api>@nestjs/testing>@nestjs/core>@nestjs/platform-express>express>body-parser>qs",
+            "apps__api>@nestjs/testing>@nestjs/core>@nestjs/platform-express>express>qs",
+            "apps__api>@nestjs/testing>@nestjs/platform-express>express>body-parser>qs",
+            "apps__api>@nestjs/testing>@nestjs/platform-express>express>qs",
+            "apps__api>supertest>superagent>qs"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1158506,
+      "title": "qs array-limit bypass via bracket-key comma parsing",
+      "module_name": "qs",
+      "vulnerable_versions": ">=6.14.2 <=6.15.3",
+      "patched_versions": ">=6.15.4",
+      "severity": "moderate",
+      "cwe": "CWE-770",
+      "github_advisory_id": "GHSA-x5fp-wj9c-mxmx",
+      "url": "https://github.com/advisories/GHSA-x5fp-wj9c-mxmx"
+    },
+    "1158507": {
+      "findings": [
+        {
+          "version": "6.15.3",
+          "paths": [
+            "apps__api>@nestjs/core>@nestjs/platform-express>express>body-parser>qs",
+            "apps__api>@nestjs/core>@nestjs/platform-express>express>qs",
+            "apps__api>@nestjs/platform-express>express>body-parser>qs",
+            "apps__api>@nestjs/platform-express>express>qs",
+            "apps__api>@nestjs/swagger>@nestjs/core>@nestjs/platform-express>express>body-parser>qs",
+            "apps__api>@nestjs/swagger>@nestjs/core>@nestjs/platform-express>express>qs",
+            "apps__api>@nestjs/testing>@nestjs/core>@nestjs/platform-express>express>body-parser>qs",
+            "apps__api>@nestjs/testing>@nestjs/core>@nestjs/platform-express>express>qs",
+            "apps__api>@nestjs/testing>@nestjs/platform-express>express>body-parser>qs",
+            "apps__api>@nestjs/testing>@nestjs/platform-express>express>qs",
+            "apps__api>supertest>superagent>qs"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1158507,
+      "title": "qs: Denial of Service via Attacker Controlled isBuffer",
+      "module_name": "qs",
+      "vulnerable_versions": ">=2.2.5 <6.16.0",
+      "patched_versions": ">=6.16.0",
+      "severity": "moderate",
+      "cwe": "CWE-248, CWE-703",
+      "github_advisory_id": "GHSA-4mjr-xmp4-gh2g",
+      "url": "https://github.com/advisories/GHSA-4mjr-xmp4-gh2g"
+    },
+    "1158521": {
+      "findings": [
+        {
+          "version": "3.1.5",
+          "paths": [
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1158521,
+      "title": "fast-uri vulnerable to host confusion via skipped IDN canonicalization on scheme-relative references",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.1.3 <3.1.6",
+      "patched_versions": ">=3.1.6",
+      "severity": "high",
+      "cwe": "CWE-436",
+      "github_advisory_id": "GHSA-5jgf-p345-68v8",
+      "url": "https://github.com/advisories/GHSA-5jgf-p345-68v8"
+    },
+    "1158524": {
+      "findings": [
+        {
+          "version": "3.1.5",
+          "paths": [
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1158524,
+      "title": "fast-uri vulnerable to server-side request forgery via malformed IPv6 normalization",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.0.0 <3.1.6",
+      "patched_versions": ">=3.1.6",
+      "severity": "high",
+      "cwe": "CWE-20, CWE-918",
+      "github_advisory_id": "GHSA-f65p-4m7j-42xc",
+      "url": "https://github.com/advisories/GHSA-f65p-4m7j-42xc"
+    },
+    "1158527": {
+      "findings": [
+        {
+          "version": "3.1.5",
+          "paths": [
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1158527,
+      "title": "fast-uri vulnerable to server-side request forgery via repeated hostname percent-decoding",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.1.2 <3.1.6",
+      "patched_versions": ">=3.1.6",
+      "severity": "high",
+      "cwe": "CWE-174, CWE-918",
+      "github_advisory_id": "GHSA-fph4-wmhf-6fwf",
+      "url": "https://github.com/advisories/GHSA-fph4-wmhf-6fwf"
+    },
+    "1158530": {
+      "findings": [
+        {
+          "version": "3.1.5",
+          "paths": [
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1158530,
+      "title": "fast-uri vulnerable to host confusion via percent-encoded scheme normalization",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.0.0 <3.1.6",
+      "patched_versions": ">=3.1.6",
+      "severity": "high",
+      "cwe": "CWE-177",
+      "github_advisory_id": "GHSA-jqff-g426-hqxp",
+      "url": "https://github.com/advisories/GHSA-jqff-g426-hqxp"
+    },
+    "1193683": {
+      "findings": [
+        {
+          "version": "2.1.9",
+          "paths": [
+            "apps__api>vitest",
+            "apps__worker>vitest",
+            "packages__config>vitest",
+            "packages__permissions>vitest",
+            "packages__validation>vitest"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193683,
+      "title": "Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock",
+      "module_name": "vitest",
+      "vulnerable_versions": ">=2.1.0 <4.1.11",
+      "patched_versions": ">=4.1.11",
+      "severity": "moderate",
+      "cwe": "CWE-22",
+      "github_advisory_id": "GHSA-82fw-gwwq-j7x9",
+      "url": "https://github.com/advisories/GHSA-82fw-gwwq-j7x9"
+    },
+    "1193684": {
+      "findings": [
+        {
+          "version": "2.1.9",
+          "paths": [
+            "apps__api>vitest>@vitest/mocker",
+            "apps__worker>vitest>@vitest/mocker",
+            "packages__config>vitest>@vitest/mocker",
+            "packages__permissions>vitest>@vitest/mocker",
+            "packages__validation>vitest>@vitest/mocker"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193684,
+      "title": "Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock",
+      "module_name": "@vitest/mocker",
+      "vulnerable_versions": ">=2.1.0 <4.1.11",
+      "patched_versions": ">=4.1.11",
+      "severity": "moderate",
+      "cwe": "CWE-22",
+      "github_advisory_id": "GHSA-82fw-gwwq-j7x9",
+      "url": "https://github.com/advisories/GHSA-82fw-gwwq-j7x9"
+    },
+    "1193727": {
+      "findings": [
+        {
+          "version": "4.3.1",
+          "paths": [
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>cosmiconfig>js-yaml"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193727,
+      "title": "js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources",
+      "module_name": "js-yaml",
+      "vulnerable_versions": ">=4.0.0 <4.3.2",
+      "patched_versions": ">=4.3.2",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-407",
+      "github_advisory_id": "GHSA-2883-xcg3-v3hh",
+      "url": "https://github.com/advisories/GHSA-2883-xcg3-v3hh"
+    },
+    "1193790": {
+      "findings": [
+        {
+          "version": "2.2.0",
+          "paths": [
+            "apps__api>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/swagger>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/testing>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/testing>@nestjs/platform-express>multer"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193790,
+      "title": "multer vulnerable to Denial of Service via crafted multipart field names",
+      "module_name": "multer",
+      "vulnerable_versions": "<2.3.0",
+      "patched_versions": ">=2.3.0",
+      "severity": "high",
+      "cwe": "CWE-248",
+      "github_advisory_id": "GHSA-wc9g-mqfw-jrwm",
+      "url": "https://github.com/advisories/GHSA-wc9g-mqfw-jrwm"
+    },
+    "1193791": {
+      "findings": [
+        {
+          "version": "2.2.0",
+          "paths": [
+            "apps__api>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/swagger>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/testing>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/testing>@nestjs/platform-express>multer"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193791,
+      "title": "multer vulnerable to Denial of Service via file descriptor leak on aborted uploads",
+      "module_name": "multer",
+      "vulnerable_versions": "=2.2.0",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-459",
+      "github_advisory_id": "GHSA-qfvm-cv95-jqjf",
+      "url": "https://github.com/advisories/GHSA-qfvm-cv95-jqjf"
+    },
+    "1193792": {
+      "findings": [
+        {
+          "version": "2.2.0",
+          "paths": [
+            "apps__api>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/swagger>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/testing>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/testing>@nestjs/platform-express>multer"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193792,
+      "title": "multer vulnerable to file size limit bypass via async fileFilter race condition",
+      "module_name": "multer",
+      "vulnerable_versions": "<2.3.0",
+      "patched_versions": ">=2.3.0",
+      "severity": "low",
+      "cwe": "CWE-362",
+      "github_advisory_id": "GHSA-qvfw-j98x-7q72",
+      "url": "https://github.com/advisories/GHSA-qvfw-j98x-7q72"
+    },
+    "1193793": {
+      "findings": [
+        {
+          "version": "2.2.0",
+          "paths": [
+            "apps__api>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/swagger>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/testing>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/testing>@nestjs/platform-express>multer"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193793,
+      "title": "multer vulnerable to Denial of Service via oversized array index in field names",
+      "module_name": "multer",
+      "vulnerable_versions": "<2.3.0",
+      "patched_versions": ">=2.3.0",
+      "severity": "high",
+      "cwe": "CWE-400",
+      "github_advisory_id": "GHSA-535w-7cp7-47q4",
+      "url": "https://github.com/advisories/GHSA-535w-7cp7-47q4"
+    },
+    "1239935": {
+      "findings": [
+        {
+          "version": "2.2.0",
+          "paths": [
+            "apps__api>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/swagger>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/testing>@nestjs/core>@nestjs/platform-express>multer",
+            "apps__api>@nestjs/testing>@nestjs/platform-express>multer"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1239935,
+      "title": "multer vulnerable to Denial of Service via orphaned disk writes on aborted uploads",
+      "module_name": "multer",
+      "vulnerable_versions": ">=2.2.0 <2.4.0",
+      "patched_versions": ">=2.4.0",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-459",
+      "github_advisory_id": "GHSA-3pph-fpjx-jg34",
+      "url": "https://github.com/advisories/GHSA-3pph-fpjx-jg34"
+    },
+    "1239943": {
+      "findings": [
+        {
+          "version": "3.1.5",
+          "paths": [
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1239943,
+      "title": "fast-uri vulnerable to authority injection via an unvalidated port in serialize",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.0.0 <3.1.7",
+      "patched_versions": ">=3.1.7",
+      "severity": "high",
+      "cwe": "CWE-116",
+      "github_advisory_id": "GHSA-qw65-cvwx-89v3",
+      "url": "https://github.com/advisories/GHSA-qw65-cvwx-89v3"
+    },
+    "1239991": {
+      "findings": [
+        {
+          "version": "5.2.1",
+          "paths": [
+            "apps__api>@nestjs/swagger>js-yaml"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1239991,
+      "title": "js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources",
+      "module_name": "js-yaml",
+      "vulnerable_versions": ">=5.0.0 <=5.4.0",
+      "patched_versions": ">=5.4.1",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-407",
+      "github_advisory_id": "GHSA-r3ph-w7gj-g6xm",
+      "url": "https://github.com/advisories/GHSA-r3ph-w7gj-g6xm"
+    },
+    "1240091": {
+      "findings": [
+        {
+          "version": "3.1.5",
+          "paths": [
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@angular-devkit/schematics-cli>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv>fast-uri",
+            "apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>schema-utils>ajv-keywords>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-formats>ajv>fast-uri",
+            "apps__api>@nestjs/cli>webpack>terser-webpack-plugin>schema-utils>ajv-keywords>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240091,
+      "title": "fast-uri vulnerable to inconsistent host case normalization via percent-encoded octets",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.0.0 <3.1.8",
+      "patched_versions": ">=3.1.8",
+      "severity": "moderate",
+      "cwe": "CWE-178",
+      "github_advisory_id": "GHSA-hrr3-gc8f-f4qj",
+      "url": "https://github.com/advisories/GHSA-hrr3-gc8f-f4qj"
+    },
+    "1240100": {
+      "findings": [
+        {
+          "version": "1.1.18",
+          "paths": [
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240100,
+      "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": "<1.1.21",
+      "patched_versions": ">=1.1.21",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-407",
+      "github_advisory_id": "GHSA-q2hr-2g5m-vwhr",
+      "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr"
+    },
+    "1240103": {
+      "findings": [
+        {
+          "version": "5.0.9",
+          "paths": [
+            ".>rimraf>glob>minimatch>brace-expansion",
+            "apps__api>@nestjs/cli>glob>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240103,
+      "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=4.0.0 <5.0.12",
+      "patched_versions": ">=5.0.12",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-407",
+      "github_advisory_id": "GHSA-q2hr-2g5m-vwhr",
+      "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr"
+    },
+    "1240104": {
+      "findings": [
+        {
+          "version": "1.1.18",
+          "paths": [
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240104,
+      "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": "<1.1.20",
+      "patched_versions": ">=1.1.20",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-qhr7-859c-m2p7",
+      "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7"
+    },
+    "1240107": {
+      "findings": [
+        {
+          "version": "5.0.9",
+          "paths": [
+            ".>rimraf>glob>minimatch>brace-expansion",
+            "apps__api>@nestjs/cli>glob>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240107,
+      "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=4.0.0 <5.0.11",
+      "patched_versions": ">=5.0.11",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-qhr7-859c-m2p7",
+      "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7"
+    },
+    "1240108": {
+      "findings": [
+        {
+          "version": "1.1.18",
+          "paths": [
+            "apps__api>@nestjs/cli>fork-ts-checker-webpack-plugin>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240108,
+      "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": "<1.1.19",
+      "patched_versions": ">=1.1.19",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-6j4f-fj2g-mc7p",
+      "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+    },
+    "1240111": {
+      "findings": [
+        {
+          "version": "5.0.9",
+          "paths": [
+            ".>rimraf>glob>minimatch>brace-expansion",
+            "apps__api>@nestjs/cli>glob>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240111,
+      "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=4.0.0 <5.0.10",
+      "patched_versions": ">=5.0.10",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-6j4f-fj2g-mc7p",
+      "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+    },
+    "1241209": {
+      "findings": [
+        {
+          "version": "1.2.1",
+          "paths": [
+            "apps__api>vitest>@vitest/mocker>vite>postcss>source-map-js",
+            "apps__api>vitest>vite>postcss>source-map-js",
+            "apps__api>vitest>vite-node>vite>postcss>source-map-js",
+            "apps__worker>vitest>@vitest/mocker>vite>postcss>source-map-js",
+            "apps__worker>vitest>vite>postcss>source-map-js",
+            "apps__worker>vitest>vite-node>vite>postcss>source-map-js",
+            "packages__config>vitest>@vitest/mocker>vite>postcss>source-map-js",
+            "packages__config>vitest>vite>postcss>source-map-js",
+            "packages__config>vitest>vite-node>vite>postcss>source-map-js",
+            "packages__permissions>vitest>@vitest/mocker>vite>postcss>source-map-js",
+            "packages__permissions>vitest>vite>postcss>source-map-js",
+            "packages__permissions>vitest>vite-node>vite>postcss>source-map-js",
+            "packages__validation>vitest>@vitest/mocker>vite>postcss>source-map-js",
+            "packages__validation>vitest>vite>postcss>source-map-js",
+            "packages__validation>vitest>vite-node>vite>postcss>source-map-js"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241209,
+      "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets",
+      "module_name": "source-map-js",
+      "vulnerable_versions": ">=1.0.0 <1.2.2",
+      "patched_versions": ">=1.2.2",
+      "severity": "high",
+      "cwe": "CWE-1284",
+      "github_advisory_id": "GHSA-68fv-2mgg-jv7q",
+      "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q"
+    },
+    "1241210": {
+      "findings": [
+        {
+          "version": "2.0.7",
+          "paths": [
+            "apps__api>@nestjs/core>@nestjs/platform-express>express>proxy-addr",
+            "apps__api>@nestjs/platform-express>express>proxy-addr",
+            "apps__api>@nestjs/swagger>@nestjs/core>@nestjs/platform-express>express>proxy-addr",
+            "apps__api>@nestjs/testing>@nestjs/core>@nestjs/platform-express>express>proxy-addr",
+            "apps__api>@nestjs/testing>@nestjs/platform-express>express>proxy-addr"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241210,
+      "title": "proxy-addr vulnerable to IP spoofing via IPv4-mapped IPv6 trust subnet",
+      "module_name": "proxy-addr",
+      "vulnerable_versions": ">=1.1.0 <2.0.8",
+      "patched_versions": ">=2.0.8",
+      "severity": "critical",
+      "cwe": "CWE-290, CWE-348, CWE-697",
+      "github_advisory_id": "GHSA-jqcg-44mw-7w3h",
+      "url": "https://github.com/advisories/GHSA-jqcg-44mw-7w3h"
+    },
+    "1241260": {
+      "findings": [
+        {
+          "version": "1.1.1",
+          "paths": [
+            "apps__api>vitest>tinypool",
+            "apps__worker>vitest>tinypool",
+            "packages__config>vitest>tinypool",
+            "packages__permissions>vitest>tinypool",
+            "packages__validation>vitest>tinypool"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241260,
+      "title": "Tinypool: Prototype Pollution gadget in worker options leads to Remote Code Execution",
+      "module_name": "tinypool",
+      "vulnerable_versions": "<=2.1.0",
+      "patched_versions": ">=2.1.1",
+      "severity": "critical",
+      "cwe": "CWE-1321",
+      "github_advisory_id": "GHSA-5gmw-xhrv-c9v3",
+      "url": "https://github.com/advisories/GHSA-5gmw-xhrv-c9v3"
+    },
+    "1241261": {
+      "findings": [
+        {
+          "version": "1.1.1",
+          "paths": [
+            "apps__api>vitest>tinypool",
+            "apps__worker>vitest>tinypool",
+            "packages__config>vitest>tinypool",
+            "packages__permissions>vitest>tinypool",
+            "packages__validation>vitest>tinypool"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241261,
+      "title": "Tinypool: Prototype Pollution Gadget to RCE in run() options",
+      "module_name": "tinypool",
+      "vulnerable_versions": "<2.1.2",
+      "patched_versions": ">=2.1.2",
+      "severity": "critical",
+      "cwe": "CWE-94, CWE-1321",
+      "github_advisory_id": "GHSA-85c8-ppgw-ccpr",
+      "url": "https://github.com/advisories/GHSA-85c8-ppgw-ccpr"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 1,
+      "moderate": 12,
+      "high": 18,
+      "critical": 4
+    },
+    "dependencies": 200,
+    "devDependencies": 341,
+    "optionalDependencies": 92,
+    "totalDependencies": 550
+  }
+}

@@ -11,12 +11,16 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "prisma"],
+  "files": [
+    "dist",
+    "prisma"
+  ],
   "scripts": {
     "generate": "prisma generate",
     "build": "prisma generate && tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test test/*.test.cjs",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:status": "prisma migrate status",
@@ -30,13 +34,13 @@
     "seed": "tsx prisma/seed/index.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.2.1"
+    "@prisma/client": "6.19.3"
   },
   "devDependencies": {
     "@operix/permissions": "workspace:*",
     "@operix/types": "workspace:*",
     "argon2": "^0.41.1",
-    "prisma": "^6.2.1",
+    "prisma": "6.19.3",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
