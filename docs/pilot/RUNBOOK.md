@@ -16,7 +16,8 @@ BASE=/opt/ght/apps/operix
 CURRENT=$(readlink -f "$BASE/current"); IMAGE_TAG=$(basename "$CURRENT")
 export ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com" IMAGE_TAG \
        RELEASE_SHA="${IMAGE_TAG:0:40}" SECRETS_DIR="$CURRENT/runtime"
-files=(-f "$CURRENT/deploy/compose.yml"); [[ ${PROXY_MODE:-host} == host ]] || files+=(-f "$CURRENT/deploy/compose.proxy.yml")
+files=(-f "$CURRENT/deploy/compose.yml")
+case $PROXY_MODE in docker-edge) files+=(-f "$CURRENT/deploy/compose.proxy.yml");; tunnel) files+=(-f "$CURRENT/deploy/compose.tunnel.yml");; esac
 oc() { docker compose --project-name operix-staging --env-file /dev/null "${files[@]}" "$@"; }
 ```
 

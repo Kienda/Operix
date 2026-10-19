@@ -5,7 +5,6 @@ import {
   createActor,
   fix,
   invoice,
-  rec,
   uid,
   writeEvidence,
   type Actor,

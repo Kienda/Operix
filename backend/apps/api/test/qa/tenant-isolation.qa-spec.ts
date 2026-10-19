@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { buildWorld, call, invoice, paymentBody, rec, uid, type World } from './harness';
+import { buildWorld, call, invoice, paymentBody, uid, type World } from './harness';
 
 /** Atlas exists only to prove that GHT and Atlas can never reach each other's data. */
 let w: World;

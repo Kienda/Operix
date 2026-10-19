@@ -40,6 +40,8 @@ def staging_env(out):
 
 def embed(path, content, mode):
     data = content.encode() if isinstance(content, str) else content
+    # A Windows checkout may carry CRLF; bash and systemd on the host need LF.
+    data = data.replace(b"\r\n", b"\n")
     digest = hashlib.sha256(data).hexdigest()
     b64 = base64.b64encode(data).decode()
     return (f"install_file {path} {mode} {digest} <<'B64'\n{b64}\nB64\n")
@@ -52,7 +54,7 @@ def main():
         embed("/etc/operix/staging.env", staging_env(out), "0600"),
         embed("/etc/systemd/system/operix-imds-block.service", (ROOT / "deploy/systemd/operix-imds-block.service").read_bytes(), "0644"),
     ]
-    print(f"""#!/usr/bin/env bash
+    script = f"""#!/usr/bin/env bash
 # Operix restricted-staging host bootstrap (rendered {STACK}; review before running).
 set -Eeuo pipefail
 umask 077
@@ -84,7 +86,9 @@ aws --version
 install -o root -g root -m 0600 /dev/null /etc/operix/staging.approved
 echo 'Operix host bootstrap complete. Tontin was not touched.'
 iptables -S DOCKER-USER
-""")
+"""
+    # Raw bytes: on Windows, text-mode stdout would turn every newline into CRLF.
+    sys.stdout.buffer.write(script.encode())
 
 
 if __name__ == "__main__":

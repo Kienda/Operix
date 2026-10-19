@@ -32,7 +32,7 @@ const jobs = new Worker(
   { connection },
 );
 
-jobs.on('failed', (job, error) =>
+jobs.on('failed', (job) =>
   console.error(JSON.stringify({ level: 'error', jobId: job?.id, error: 'job_failed' })),
 );
 process.on('SIGTERM', async () => {

@@ -75,8 +75,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           python3 -m unittest discover -s deploy/tests -v
-          bash -n deploy/scripts/*.sh deploy/docker/*.sh
-          docker run --rm -v "$PWD:/mnt:ro" koalaman/shellcheck:v0.10.0 -S warning /mnt/deploy/scripts/*.sh /mnt/deploy/docker/*.sh
+          for script in deploy/scripts/*.sh deploy/docker/*.sh; do bash -n "$script"; done
+          docker run --rm -v "$PWD:/mnt:ro" -w /mnt koalaman/shellcheck:v0.10.0 -S warning deploy/scripts/*.sh deploy/docker/*.sh
       - name: Existing lint and formatting gates
         if: ${{ !cancelled() }}
         run: |

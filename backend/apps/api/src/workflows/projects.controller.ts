@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Body,
   Controller,
-  ForbiddenException,
   NotFoundException,
   Param,
   ParseUUIDPipe,

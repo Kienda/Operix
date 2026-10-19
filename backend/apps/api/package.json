@@ -8,6 +8,7 @@
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src test *.ts --max-warnings=0",
     "test": "vitest run",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:p0": "pnpm build && vitest run --config vitest.p0.config.ts",
