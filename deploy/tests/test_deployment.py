@@ -123,7 +123,10 @@ class DeploymentContracts(unittest.TestCase):
         self.assertIn("--token-file", tunnel["command"])
         self.assertTrue(tunnel["image"].endswith("/operix-tunnel:" + "a" * 40 + "-1-1"))
         dockerfile = (ROOT / "deploy/docker/tunnel.Dockerfile").read_text()
-        self.assertRegex(dockerfile, r"cloudflared:[0-9.]+@sha256:[0-9a-f]{64}")
+        self.assertRegex(dockerfile, r"golang:1\.27\.3-bookworm@sha256:[0-9a-f]{64}")
+        self.assertIn("ADD --checksum=sha256:", dockerfile)
+        self.assertIn("GOTOOLCHAIN=local", dockerfile)
+        self.assertIn("USER 65532:65532", dockerfile)
 
     def test_dockerfile_copy_sources_are_tracked(self):
         # CI builds from a clean checkout: an untracked or empty directory (git keeps no empty
