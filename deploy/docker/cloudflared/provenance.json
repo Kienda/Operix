@@ -1,0 +1,27 @@
+{
+  "upstream": "https://github.com/cloudflare/cloudflared.git",
+  "release": "2026.10.2",
+  "tag_object": "47cb4bc932a37b22dce0d14237e64322ad84686c",
+  "commit": "002a5ccaf75a4e612bfa451063c1d82a2d13336b",
+  "tag_signature": "not signed; verified against official HTTPS origin and release tag",
+  "archive_sha256": "91eb08b2924e92303a12ca7848be4c01d62b3ec701895bbd2caf5507d07b6c15",
+  "dependency_patch": {
+    "module": "github.com/klauspost/compress",
+    "from": "v1.18.0",
+    "to": "v1.18.7",
+    "sum_lines": [
+      "github.com/klauspost/compress v1.18.7 h1:aUyZsS4kH3QTKurYhAOwAHxllVPnOthb3vPfnF1Ehjw=",
+      "github.com/klauspost/compress v1.18.7/go.mod h1:cwPg85FWrGar70rWktvGQj8/hthj3wpl0PGDogxkrSQ="
+    ]
+  },
+  "lock_sha256": {
+    "go.mod": "74e60b9fb5f5eee36403f63006c8c3ffccb7c9b64b3a6c11204fa065fbed615c",
+    "go.sum": "a5242f186e8de26d20926ad158d09384f3a0b6162c8c7e9177287b65aa5753db"
+  },
+  "toolchain": "go1.27.3",
+  "version": "2026.10.2-operix.1",
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ]
+}

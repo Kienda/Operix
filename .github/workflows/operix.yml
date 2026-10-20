@@ -111,8 +111,12 @@ jobs:
           done
           docker build -f deploy/docker/web.Dockerfile -t local/operix-web:test .
           docker build -f deploy/docker/tunnel.Dockerfile --target tunnel -t local/operix-tunnel:test .
+          docker build -f deploy/docker/tunnel.Dockerfile --target tunnel-tests -t local/operix-tunnel-tests:test .
+          docker run --rm --network none --cap-drop=ALL --security-opt=no-new-privileges:true --sysctl 'net.ipv4.ping_group_range=0 0' local/operix-tunnel-tests:test
       - name: Exercise actual images, migrations, readiness and empty accounts
-        run: python3 deploy/tests/smoke.py
+        run: |
+          python3 deploy/tests/smoke.py
+          python3 deploy/tests/tunnel_smoke.py --image local/operix-tunnel:test
       - name: Scan release images
         run: |
           scan_status=0

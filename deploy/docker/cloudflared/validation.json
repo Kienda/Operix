@@ -1,0 +1,75 @@
+{
+  "source_commit": "002a5ccaf75a4e612bfa451063c1d82a2d13336b",
+  "version": "2026.10.2-operix.1",
+  "dependency": "github.com/klauspost/compress@v1.18.7",
+  "scanner": "aquasec/trivy:0.61.1",
+  "scanner_arguments": [
+    "image",
+    "--input",
+    "/scan/image.tar",
+    "--scanners",
+    "vuln",
+    "--severity",
+    "HIGH,CRITICAL",
+    "--exit-code",
+    "1"
+  ],
+  "normalized_amd64_oci_manifest": "sha256:2859d521d8add08ac288950ba2d90082aaaaf9ed639fec5eedab6e88c07f029a",
+  "uncached_builder_reproduction": "identical normalized OCI manifest",
+  "scans": {
+    "api": {
+      "HIGH": 0,
+      "CRITICAL": 0,
+      "exit_code": 0,
+      "warnings": [
+        "Using severities from other vendors for some vulnerabilities. Read https://trivy.dev/v0.61/docs/scanner/vulnerability#severity-selection for details."
+      ]
+    },
+    "worker": {
+      "HIGH": 0,
+      "CRITICAL": 0,
+      "exit_code": 0,
+      "warnings": [
+        "Using severities from other vendors for some vulnerabilities. Read https://trivy.dev/v0.61/docs/scanner/vulnerability#severity-selection for details."
+      ]
+    },
+    "migrate": {
+      "HIGH": 0,
+      "CRITICAL": 0,
+      "exit_code": 0,
+      "warnings": [
+        "Using severities from other vendors for some vulnerabilities. Read https://trivy.dev/v0.61/docs/scanner/vulnerability#severity-selection for details."
+      ]
+    },
+    "web": {
+      "HIGH": 0,
+      "CRITICAL": 0,
+      "exit_code": 0,
+      "warnings": [
+        "This OS version is not on the EOL list\tfamily=\"alpine\" version=\"3.24\""
+      ]
+    },
+    "tunnel": {
+      "HIGH": 0,
+      "CRITICAL": 0,
+      "exit_code": 0,
+      "warnings": [
+        "Using severities from other vendors for some vulnerabilities. Read https://trivy.dev/v0.61/docs/scanner/vulnerability#severity-selection for details."
+      ]
+    }
+  },
+  "functional_checks": [
+    "amd64 version",
+    "arm64 cross-build and emulated version",
+    "valid and invalid ingress configuration",
+    "ingress routing",
+    "invalid token file rejected",
+    "non-root hardened startup",
+    "anonymous HTTPS Quick Tunnel nonce roundtrip",
+    "upstream config/ingress/cliutil/validation suites including ICMP",
+    "8 deployment contracts",
+    "CI application image smoke",
+    "actionlint 1.7.7",
+    "ShellCheck 0.10.0"
+  ]
+}
