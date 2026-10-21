@@ -127,6 +127,9 @@ jobs:
             rm image.tar
           done
           exit "$scan_status"
+      - name: Scan PostgreSQL and Redis supporting images
+        if: ${{ !cancelled() }}
+        run: python3 deploy/tests/scan_support_images.py
 
   publish:
     needs: [verify, security, images]
