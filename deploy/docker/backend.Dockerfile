@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM node:24-trixie-slim AS build
+FROM node:26-trixie-slim AS build
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates python3 make g++ \
     && rm -rf /var/lib/apt/lists/* && npm install --global pnpm@11.1.3
 WORKDIR /build/backend
