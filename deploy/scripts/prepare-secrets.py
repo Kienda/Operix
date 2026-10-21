@@ -10,12 +10,17 @@ from pathlib import Path
 from urllib.parse import quote
 
 
-def prepare(secret, target):
+def validate(secret, *, require_tunnel=False):
+    """Validate in memory without writing credentials or including values in errors."""
+    if not isinstance(secret, dict):
+        raise ValueError("Secret must be a JSON object")
     required = {"DB_ADMIN_PASSWORD", "DB_MIGRATE_PASSWORD", "DB_APP_PASSWORD", "REDIS_PASSWORD", "JWT_ACCESS_SECRET", "SMTP_USER", "SMTP_PASSWORD"}
     optional = {"CLOUDFLARE_TUNNEL_TOKEN"}
     if not required <= set(secret) <= required | optional or any(not isinstance(v, str) or not v for v in secret.values()):
         raise ValueError("Secret must have exactly the documented nonempty fields")
     tunnel = secret.get("CLOUDFLARE_TUNNEL_TOKEN")
+    if require_tunnel and tunnel is None:
+        raise ValueError("Tunnel mode requires the dedicated connector token")
     if tunnel is not None and not re.fullmatch(r"[A-Za-z0-9+/=_-]{100,4096}", tunnel):
         raise ValueError("Tunnel token must be the connector token issued by Cloudflare")
     for key in required - {"SMTP_USER", "SMTP_PASSWORD"}:
@@ -25,6 +30,16 @@ def prepare(secret, target):
         raise ValueError("Independent credentials are required")
     if any(re.search(r"GENERATE_|SET_PROVIDER|REPLACE_", v) for v in secret.values()):
         raise ValueError("Placeholder credentials are forbidden")
+
+
+def credential_fingerprint(secret):
+    stable = {k: secret[k] for k in sorted(secret) if k.startswith("DB_") or k == "REDIS_PASSWORD"}
+    return hashlib.sha256(json.dumps(stable, sort_keys=True).encode()).hexdigest()
+
+
+def prepare(secret, target):
+    validate(secret)
+    tunnel = secret.get("CLOUDFLARE_TUNNEL_TOKEN")
     target.mkdir(mode=0o700, parents=True, exist_ok=True)
     def save(name, value):
         path = target / name
@@ -42,8 +57,7 @@ def prepare(secret, target):
     if tunnel is not None:
         save("tunnel_token", tunnel)
     # Detect password rotations before touching existing persistent databases.
-    stable = {k: secret[k] for k in sorted(required) if k.startswith("DB_") or k == "REDIS_PASSWORD"}
-    save("credential-fingerprint", hashlib.sha256(json.dumps(stable, sort_keys=True).encode()).hexdigest())
+    save("credential-fingerprint", credential_fingerprint(secret))
 
 
 if __name__ == "__main__":

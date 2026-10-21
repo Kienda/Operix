@@ -13,6 +13,17 @@ spec.loader.exec_module(module)
 
 
 class SecretTests(unittest.TestCase):
+    def test_pure_validation_requires_tunnel_without_writing_files(self):
+        secret = self.secret()
+        module.validate(secret)
+        with self.assertRaises(ValueError):
+            module.validate(secret, require_tunnel=True)
+        with self.assertRaises(ValueError):
+            module.validate([])
+        with_token = {**secret, "CLOUDFLARE_TUNNEL_TOKEN": "A" * 180}
+        module.validate(with_token, require_tunnel=True)
+        self.assertEqual(module.credential_fingerprint(secret), module.credential_fingerprint(with_token))
+
     def secret(self):
         return {"DB_ADMIN_PASSWORD": "a" * 64, "DB_MIGRATE_PASSWORD": "b" * 64,
                 "DB_APP_PASSWORD": "c" * 64, "REDIS_PASSWORD": "d" * 64,

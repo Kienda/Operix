@@ -241,6 +241,12 @@ Review/update both the workflow's document version and the approved host bootstr
 For a new volume it starts the isolated database/Redis. Existing data services are not recreated during an
 application deploy. It stops only Operix web/API for a short maintenance window, writes a `pg_dump -Fc`,
 uploads an AES256-encrypted backup to the dedicated bucket, then executes **`prisma migrate deploy`**.
+Both pre-migration and scheduled backups use `scripts/recovery-common.sh`: write a private
+partial file, require a successful nonempty `pg_dump` and `pg_restore --list`, then send a
+single-part S3 PutObject with SHA256 validation, checksum/release metadata, AES256 encryption
+and conditional no-overwrite. The returned S3 checksum must match before the local archive
+is published. This preserves the instance's upload-only backup permission; it does not add
+GetObject. Archives above 5 GiB require a separately reviewed multipart procedure.
 It never runs `migrate dev`, `db push`, seed, reset or default-account creation. A failed backup or migration
 leaves Operix in maintenance and fails SSM; diagnose before retrying. Invalid historical ledger data may
 intentionally abort the P0 migration. Never use `migrate resolve` to skip a failed migration without a review.
@@ -275,6 +281,47 @@ expand/contract compatibility and prepare a forward fix; restore a backup into a
 first, verify migrations and balances, and approve any cutover/data loss. Never restore into Tontin or
 automatically overwrite the current database. Retain both original volumes and backups until reconciliation
 and the restore rehearsal pass. No routine deployment deletes volumes or runs global image cleanup.
+
+### Recovery verification and operator-assisted reads
+
+`scripts/restore-rehearsal.sh` rejects absent, malformed or mismatched SHA256 metadata,
+waits for PostgreSQL readiness, checks the archive and restores with `--exit-on-error`.
+It compares restored public-table counts with the archive. Scratch PostgreSQL is pinned
+by digest, network-isolated, non-root, read-only with tmpfs data, and limited to 512 MiB /
+0.5 CPU. Cleanup removes only the immutable container ID created by the command; a failed
+create never deletes a pre-existing name, and cleanup failure makes the command fail.
+The instance cannot download backups. Use an independently authorized operator profile
+on a recovery workstation to fetch the object and SHA256 metadata, then use
+`restore-rehearsal.sh --archive <private-file> --sha256 <metadata-checksum>`; never copy
+operator AWS credentials onto EC2 or into containers. Do not use a default host role as
+proof of restore permission. No restore command overwrites a live database.
+
+`scripts/rehearse-synthetic-recovery.sh` prepares a Windows/WSL workstation-only drill.
+It requires separate approval for temporary containers and a single S3 object write.
+It forces the local Docker Desktop named-pipe context, creates two PostgreSQL containers
+sequentially, uses only a three-row synthetic table
+(no application migrations), exercises the same backup function, downloads with the
+operator's temporary AWS profile, and verifies restored rows, amounts and synthetic flags.
+It leaves no running scratch containers or persistent data volumes and retains only the
+encrypted, checksummed synthetic S3 object. Do not run it automatically in CI or on EC2.
+`python3 -m unittest discover -s deploy/tests -v` fault-tests these workflows with fake
+Docker/AWS transports; it does not start containers, send mail or make cloud writes.
+
+### Runtime token continuity
+
+The pure `prepare-secrets.py` validator can inspect a secret in memory without creating
+runtime files. `set-tunnel-token.py` is a separately approved Windows operator tool, not
+a host bootstrap/deploy action. It retrieves only the dedicated connector token through
+the private DPAPI-backed provider helper, verifies account/tunnel binding, and uses the
+official AWS SDK with temporary CLI-login credentials held in memory. It preserves all
+existing fields, stages a new encrypted version, verifies schema and DB/Redis credential
+continuity, then promotes it only if the previously read version still owns AWSCURRENT.
+Readback is verified and the previous version remains recoverable. Credentials/payloads
+never enter process arguments, plaintext files or output; do not run the provider helper
+directly or enable SDK debug logging. Tool dependencies belong in an isolated workstation
+directory, not the frontend/backend dependency manifests. No database or Redis password
+rotation is part of adding the tunnel token. The live rehearsal, runtime write and new
+release publication must be verified before claiming staging readiness.
 
 ## Restricted tester provisioning
 

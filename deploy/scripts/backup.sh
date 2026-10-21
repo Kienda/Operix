@@ -6,6 +6,7 @@ set -Eeuo pipefail
 umask 077
 BASE=/opt/ght/apps/operix
 KEEP_LOCAL=${KEEP_LOCAL:-3}
+[[ $KEEP_LOCAL =~ ^[1-9][0-9]{0,2}$ ]] || { echo 'Invalid local backup retention' >&2; exit 2; }
 [[ $EUID == 0 && -f /etc/operix/staging.approved ]] || { echo 'Restricted staging has not been approved on this host' >&2; exit 1; }
 set -a
 # shellcheck disable=SC1091
@@ -31,17 +32,16 @@ flock -w 900 9 || { echo 'A release is still running; backup skipped' >&2; exit 
 mkdir -p "$BASE/backups"
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 FILE="$BASE/backups/$STAMP-scheduled.dump"
-compose exec -T postgres pg_dump -U operix_admin -d operix -Fc > "$FILE"
-[[ -s $FILE ]] || { echo 'Empty dump' >&2; exit 1; }
-# A dump that pg_restore cannot list is not a backup.
-compose exec -T postgres pg_restore --list < "$FILE" > /dev/null
-SHA=$(sha256sum "$FILE" | cut -d' ' -f1)
-aws s3 cp "$FILE" "s3://$BACKUP_BUCKET/operix-staging/scheduled/$(basename "$FILE")" \
-  --sse AES256 --metadata "sha256=$SHA,release=$IMAGE_TAG" --only-show-errors
+# shellcheck source=deploy/scripts/recovery-common.sh
+source "$CURRENT/deploy/scripts/recovery-common.sh"
+SHA=$(operix_create_backup "$FILE" "$BACKUP_BUCKET" "operix-staging/scheduled/$(basename "$FILE")" "$IMAGE_TAG")
 
 # Local copies are a convenience only; S3 (versioned) is the backup of record.
 find "$BASE/backups" -maxdepth 1 -name '*-scheduled.dump' -type f -printf '%T@ %p\n' \
   | sort -rn | tail -n +"$((KEEP_LOCAL + 1))" | cut -d' ' -f2- | xargs -r rm -f --
+MARKER=$(mktemp "$BASE/backups/.last-success.XXXXXX")
+trap 'rm -f -- "$MARKER"' EXIT
 printf '{"time":"%s","file":"%s","sha256":"%s","release":"%s"}\n' \
-  "$STAMP" "$(basename "$FILE")" "$SHA" "$IMAGE_TAG" > "$BASE/backups/last-success.json"
+  "$STAMP" "$(basename "$FILE")" "$SHA" "$IMAGE_TAG" > "$MARKER"
+mv -f -- "$MARKER" "$BASE/backups/last-success.json"
 echo "Operix backup uploaded: $(basename "$FILE") sha256=$SHA"

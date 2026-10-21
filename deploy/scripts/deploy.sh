@@ -60,9 +60,9 @@ if [[ $2 == deploy ]]; then
   fi
   BACKUP="$BASE/backups/$(date -u +%Y%m%dT%H%M%SZ)-$1.dump"
   mkdir -p "$BASE/backups"
-  compose exec -T postgres pg_dump -U operix_admin -d operix -Fc > "$BACKUP"
-  [[ -s $BACKUP ]] || exit 1
-  aws s3 cp "$BACKUP" "s3://$BACKUP_BUCKET/operix-staging/$(basename "$BACKUP")" --sse AES256 --only-show-errors
+  # shellcheck source=deploy/scripts/recovery-common.sh
+  source "$RELEASE/deploy/scripts/recovery-common.sh"
+  operix_create_backup "$BACKUP" "$BACKUP_BUCKET" "operix-staging/$(basename "$BACKUP")" "$IMAGE_TAG" > /dev/null
   # Database rollback is never automated. A failed migration stops the release.
   if ! compose --profile release run --rm --no-deps migrate; then
     echo 'Migration failed. Operix remains in maintenance; inspect the backup and migration state.' >&2
