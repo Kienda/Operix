@@ -36,3 +36,5 @@ overrides:
   '@prisma/config>deepmerge-ts': 8.0.2
   nanoid: 3.3.18
   source-map-js: 1.2.2
+  # Vite bundles launch-editor; 8.2.4 fixes the Windows editor-launch advisories.
+  'vite@>=8.2.0 <8.2.4': 8.2.4
