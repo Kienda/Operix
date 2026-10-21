@@ -1,0 +1,6 @@
+# CI test overlay only. Never referenced by the production release receiver.
+services:
+  postgres:
+    image: local/operix-postgres:candidate
+  redis:
+    image: local/operix-redis:candidate

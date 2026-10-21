@@ -14,7 +14,10 @@ ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("prepare", ROOT / "deploy/scripts/prepare-secrets.py")
 prepare = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(prepare)
-project = "operix-image-smoke"
+candidate_mode = os.environ.get("OPERIX_SUPPORT_CANDIDATES") == "1"
+if candidate_mode and os.environ.get("CI") != "true":
+    raise SystemExit("Candidate application/migration smoke runs only in disposable CI")
+project = "operix-support-image-smoke" if candidate_mode else "operix-image-smoke"
 with tempfile.TemporaryDirectory(prefix="operix-smoke-") as directory:
     target = Path(directory) / "runtime"
     secret = {k: secrets.token_hex(48) for k in ["DB_ADMIN_PASSWORD", "DB_MIGRATE_PASSWORD", "DB_APP_PASSWORD", "REDIS_PASSWORD", "JWT_ACCESS_SECRET"]}
@@ -25,12 +28,18 @@ with tempfile.TemporaryDirectory(prefix="operix-smoke-") as directory:
            "APP_URL": "https://operix.globalhightech.com", "MAIL_FROM": "test@operix.test",
            "SMTP_HOST": "unused.invalid", "OPERIX_HTTP_PORT": "18081"}
     command = ["docker", "compose", "-p", project, "-f", str(ROOT / "deploy/compose.yml")]
+    if candidate_mode:
+        command += ["-f", str(ROOT / "deploy/compose.support-candidate.yml")]
     def compose(*args, capture=False):
         return subprocess.run([*command, *args], env=env, check=True, capture_output=capture, text=True)
     if compose("ps", "-a", "-q", capture=True).stdout.strip():
         raise SystemExit("An image smoke project already exists; refusing to change it")
     try:
-        compose("pull", "postgres", "redis")
+        if candidate_mode:
+            subprocess.run(["docker", "image", "inspect", "local/operix-postgres:candidate",
+                            "local/operix-redis:candidate"], check=True, capture_output=True)
+        else:
+            compose("pull", "postgres", "redis")
         compose("up", "-d", "--pull", "never", "--wait", "postgres", "redis")
         compose("--profile", "release", "run", "--rm", "--no-deps", "--pull", "never", "migrate")
         compose("up", "-d", "--pull", "never", "--wait", "--wait-timeout", "180", "api", "web")

@@ -91,6 +91,15 @@ def compose_config(*overlays):
 
 
 class DeploymentContracts(unittest.TestCase):
+    def test_candidate_overlay_preserves_every_property_except_support_image_references(self):
+        original = compose_config()
+        candidate = compose_config("compose.support-candidate.yml")
+        for service in ("postgres", "redis"):
+            self.assertEqual(candidate["services"][service].pop("image"), f"local/operix-{service}:candidate")
+            original["services"][service].pop("image")
+        self.assertEqual(candidate, original)
+        self.assertNotIn("compose.support-candidate.yml", (ROOT / "deploy/scripts/deploy.sh").read_text())
+
     def test_compose_is_private_and_scoped(self):
         config = compose_config()
         self.assertEqual(config["name"], "operix-staging")

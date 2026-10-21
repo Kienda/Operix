@@ -7,6 +7,18 @@ from scan_support_images import SCANNER, scan_images
 
 
 class SupportingImageGateTests(unittest.TestCase):
+    def test_candidate_scans_require_local_images_without_registry_fallback(self):
+        calls = []
+
+        def runner(args, **kwargs):
+            calls.append(args)
+            return subprocess.CompletedProcess(args, 0)
+
+        self.assertEqual(scan_images({n: f"local/operix-{n}:candidate" for n in ("postgres", "redis")},
+                                     Path("/private-scan"), runner, pull=False), 0)
+        self.assertFalse(any(args[1] == "pull" for args in calls))
+        self.assertEqual(sum(args[1:3] == ["image", "inspect"] for args in calls), 2)
+
     def run_gate(self, fault=None):
         calls = []
 

@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,14 +24,15 @@ def configured_images():
     return {name: services[name]["image"] for name in ("postgres", "redis")}
 
 
-def scan_images(images, directory, runner=subprocess.run):
+def scan_images(images, directory, runner=subprocess.run, *, pull=True):
     """Every image must pass; pull/save/scanner failures all fail the gate."""
     failed = False
     for name in ("postgres", "redis"):
         image = images[name]
         archive = directory / (name + ".tar")
         print(f"Supporting image scan: {name} = {image}", flush=True)
-        if runner(["docker", "pull", image], check=False).returncode:
+        lookup = ["docker", "pull", image] if pull else ["docker", "image", "inspect", image]
+        if runner(lookup, check=False).returncode:
             failed = True
             continue
         if runner(["docker", "save", image, "-o", str(archive)], check=False).returncode:
@@ -46,9 +48,13 @@ def scan_images(images, directory, runner=subprocess.run):
 
 
 def main():
-    images = configured_images()
+    if sys.argv[1:] not in ([], ["--candidates"]):
+        raise SystemExit("Use no arguments for production references, or --candidates for local test builds")
+    candidates = sys.argv[1:] == ["--candidates"]
+    images = ({name: f"local/operix-{name}:candidate" for name in ("postgres", "redis")}
+              if candidates else configured_images())
     with tempfile.TemporaryDirectory(prefix="operix-support-scan-") as directory:
-        return scan_images(images, Path(directory).resolve())
+        return scan_images(images, Path(directory).resolve(), pull=not candidates)
 
 
 if __name__ == "__main__":
