@@ -8,7 +8,7 @@ COPY src/ ./src/
 ENV VITE_API_URL=/api/v1 VITE_OPERIX_EXPERIENCE=pilot
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.30-alpine AS web
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS web
 USER root
 # Pick up Alpine security fixes published after the base tag was built.
 RUN apk upgrade --no-cache --available
