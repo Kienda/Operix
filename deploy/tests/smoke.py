@@ -27,9 +27,13 @@ with tempfile.TemporaryDirectory(prefix="operix-smoke-") as directory:
            "RELEASE_SHA": "a" * 40, "SECRETS_DIR": str(target),
            "APP_URL": "https://operix.globalhightech.com", "MAIL_FROM": "test@operix.test",
            "SMTP_HOST": "unused.invalid", "OPERIX_HTTP_PORT": "18081"}
+    for name in ("api", "worker", "migrate", "web", "tunnel", "postgres", "redis"):
+        local = f"local/operix-{name}:" + ("candidate" if candidate_mode and name in ("postgres", "redis") else "test")
+        env[name.upper() + "_IMAGE"] = subprocess.run(
+            ["docker", "image", "inspect", local, "--format", "{{.Id}}"], check=True,
+            capture_output=True, text=True).stdout.strip()
     command = ["docker", "compose", "-p", project, "-f", str(ROOT / "deploy/compose.yml")]
-    if candidate_mode:
-        command += ["-f", str(ROOT / "deploy/compose.support-candidate.yml")]
+
     def compose(*args, capture=False):
         return subprocess.run([*command, *args], env=env, check=True, capture_output=capture, text=True)
     if compose("ps", "-a", "-q", capture=True).stdout.strip():
@@ -38,8 +42,7 @@ with tempfile.TemporaryDirectory(prefix="operix-smoke-") as directory:
         if candidate_mode:
             subprocess.run(["docker", "image", "inspect", "local/operix-postgres:candidate",
                             "local/operix-redis:candidate"], check=True, capture_output=True)
-        else:
-            compose("pull", "postgres", "redis")
+
         compose("up", "-d", "--pull", "never", "--wait", "postgres", "redis")
         compose("--profile", "release", "run", "--rm", "--no-deps", "--pull", "never", "migrate")
         compose("up", "-d", "--pull", "never", "--wait", "--wait-timeout", "180", "api", "web")

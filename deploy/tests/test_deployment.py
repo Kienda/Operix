@@ -83,6 +83,8 @@ def compose_config(*overlays):
            "SECRETS_DIR": str(ROOT / "tmp/deployment-test-secrets"),
            "APP_URL": "https://operix.globalhightech.com", "MAIL_FROM": "test@operix.test",
            "SMTP_HOST": "smtp.test"}
+    for name in ("api", "worker", "migrate", "web", "tunnel", "postgres", "redis"):
+        env[name.upper() + "_IMAGE"] = env["ECR_REGISTRY"] + "/operix-" + name + "@sha256:" + "b" * 64
     files = [arg for name in ("compose.yml", *overlays) for arg in ("-f", str(ROOT / "deploy" / name))]
     result = subprocess.run(["docker", "compose", "--profile", "release", "--profile", "worker-disabled",
                              *files, "config", "--format", "json"],
@@ -141,7 +143,7 @@ class DeploymentContracts(unittest.TestCase):
         self.assertTrue(tunnel["read_only"])
         self.assertEqual(tunnel["cap_drop"], ["ALL"])
         self.assertIn("--token-file", tunnel["command"])
-        self.assertTrue(tunnel["image"].endswith("/operix-tunnel:" + "a" * 40 + "-1-1"))
+        self.assertTrue(tunnel["image"].endswith("/operix-tunnel@sha256:" + "b" * 64))
         dockerfile = (ROOT / "deploy/docker/tunnel.Dockerfile").read_text()
         self.assertRegex(dockerfile, r"golang:1\.27\.3-bookworm@sha256:[0-9a-f]{64}")
         self.assertIn("ADD --checksum=sha256:", dockerfile)

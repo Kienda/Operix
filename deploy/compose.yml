@@ -12,7 +12,7 @@ x-common: &common
 services:
   postgres:
     <<: *common
-    image: postgres:16-bookworm
+    image: ${POSTGRES_IMAGE:?set immutable POSTGRES_IMAGE}
     environment:
       POSTGRES_USER: operix_admin
       POSTGRES_DB: operix
@@ -35,7 +35,7 @@ services:
 
   redis:
     <<: *common
-    image: redis:7.4-alpine
+    image: ${REDIS_IMAGE:?set immutable REDIS_IMAGE}
     command: [sh, /opt/operix/redis-start.sh]
     secrets: [redis_password]
     volumes:
@@ -52,7 +52,7 @@ services:
       retries: 10
 
   migrate:
-    image: ${ECR_REGISTRY:?set ECR_REGISTRY}/operix-migrate:${IMAGE_TAG:?set IMAGE_TAG}
+    image: ${MIGRATE_IMAGE:?set immutable MIGRATE_IMAGE}
     profiles: [release]
     restart: 'no'
     init: true
@@ -76,7 +76,7 @@ services:
 
   api:
     <<: *common
-    image: ${ECR_REGISTRY:?set ECR_REGISTRY}/operix-api:${IMAGE_TAG:?set IMAGE_TAG}
+    image: ${API_IMAGE:?set immutable API_IMAGE}
     read_only: true
     tmpfs: ['/tmp:size=64m,mode=1777']
     cap_drop: [ALL]
@@ -117,7 +117,7 @@ services:
 
   web:
     <<: *common
-    image: ${ECR_REGISTRY:?set ECR_REGISTRY}/operix-web:${IMAGE_TAG:?set IMAGE_TAG}
+    image: ${WEB_IMAGE:?set immutable WEB_IMAGE}
     read_only: true
     tmpfs: ['/tmp:mode=1777,size=16m']
     cap_drop: [ALL]
@@ -133,7 +133,7 @@ services:
   worker:
     <<: *common
     profiles: [worker-disabled]
-    image: ${ECR_REGISTRY:?set ECR_REGISTRY}/operix-worker:${IMAGE_TAG:?set IMAGE_TAG}
+    image: ${WORKER_IMAGE:?set immutable WORKER_IMAGE}
     read_only: true
     tmpfs: ['/tmp:size=32m,mode=1777']
     cap_drop: [ALL]

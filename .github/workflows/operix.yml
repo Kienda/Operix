@@ -106,11 +106,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Build all release images on Linux
         run: |
-          for target in api worker migrate; do
-            docker build -f deploy/docker/backend.Dockerfile --target "$target" -t "local/operix-$target:test" .
-          done
-          docker build -f deploy/docker/web.Dockerfile -t local/operix-web:test .
-          docker build -f deploy/docker/tunnel.Dockerfile --target tunnel -t local/operix-tunnel:test .
+          python3 deploy/scripts/release-images.py build
           docker build -f deploy/docker/tunnel.Dockerfile --target tunnel-tests -t local/operix-tunnel-tests:test .
           docker run --rm --network none --cap-drop=ALL --security-opt=no-new-privileges:true --sysctl 'net.ipv4.ping_group_range=0 0' local/operix-tunnel-tests:test
       - name: Exercise actual images, migrations, readiness and empty accounts
@@ -119,22 +115,10 @@ jobs:
           python3 deploy/tests/tunnel_smoke.py --image local/operix-tunnel:test
       - name: Scan release images
         run: |
-          scan_status=0
-          for image in api worker migrate web tunnel; do
-            docker save "local/operix-$image:test" -o image.tar
-            docker run --rm -v "$PWD/image.tar:/scan/image.tar:ro" -v "$HOME/.cache/trivy:/root/.cache/" \
-              aquasec/trivy:0.61.1 image --input /scan/image.tar --scanners vuln --severity HIGH,CRITICAL --exit-code 1 || scan_status=1
-            rm image.tar
-          done
-          exit "$scan_status"
+          python3 deploy/scripts/release-images.py scan
       - name: Scan PostgreSQL and Redis supporting images
         if: ${{ !cancelled() }}
         run: python3 deploy/tests/scan_support_images.py
-      - name: Build approved internal supporting candidates (no publication)
-        if: ${{ !cancelled() }}
-        run: |
-          docker build -f deploy/docker/support.Dockerfile --target postgres-candidate -t local/operix-postgres:candidate .
-          docker build -f deploy/docker/support.Dockerfile --target redis-candidate -t local/operix-redis:candidate .
       - name: Supporting candidate synthetic restore and persistence compatibility
         if: ${{ !cancelled() }}
         run: python3 deploy/tests/support_candidates_smoke.py
@@ -147,7 +131,7 @@ jobs:
 
   publish:
     needs: [verify, security, images]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.OPERIX_AWS_ENABLED == 'true'
+    if: success() && needs.verify.result == 'success' && needs.security.result == 'success' && needs.images.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.OPERIX_AWS_ENABLED == 'true' && vars.OPERIX_SUPPORT_PUBLICATION_APPROVED == 'true'
     environment: operix-images
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -167,29 +151,21 @@ jobs:
       - name: Build, scan and publish unique release tags
         env:
           ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
+          OPERIX_SUPPORT_PUBLICATION_APPROVED: ${{ vars.OPERIX_SUPPORT_PUBLICATION_APPROVED }}
         run: |
           set -euo pipefail
           registry="$ACCOUNT.dkr.ecr.us-east-1.amazonaws.com"
-          tag="$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$registry"
-          for target in api worker migrate web tunnel; do
-            file=deploy/docker/backend.Dockerfile
-            case "$target" in web|tunnel) file="deploy/docker/$target.Dockerfile";; esac
-            image="$registry/operix-$target:$tag"
-            docker build -f "$file" --target "$target" --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$image" .
-            docker save "$image" -o image.tar
-            docker run --rm -v "$PWD/image.tar:/scan/image.tar:ro" aquasec/trivy:0.61.1 image --input /scan/image.tar \
-              --scanners vuln --severity HIGH,CRITICAL --exit-code 1
-            rm image.tar
-            docker push "$image"
-          done
+          python3 deploy/scripts/release-images.py publish
       - name: Package deployment configuration
         id: package
         env:
           BUCKET: ${{ vars.OPERIX_ARTIFACT_BUCKET }}
+          ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
         run: |
           set -euo pipefail
           release="$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          python3 deploy/scripts/image-manifest.py deploy/images.json "$ACCOUNT.dkr.ecr.us-east-1.amazonaws.com" "$release" > /dev/null
           find backend/packages/database/prisma/migrations -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1 > migrations.sha256
           printf '{"commit":"%s","release":"%s"}\n' "$GITHUB_SHA" "$release" > release.json
           tar --exclude='__pycache__' --exclude='*.pyc' -czf release.tar.gz deploy migrations.sha256 release.json

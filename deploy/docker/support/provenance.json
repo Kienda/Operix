@@ -1,5 +1,5 @@
 {
-  "status": "internal candidates only; publication/adoption not authorized",
+  "status": "verified internal build inputs; reviewed adoption preparation; publication requires separate approval",
   "source_date_epoch": 1792485048,
   "platforms": [
     "linux/amd64",

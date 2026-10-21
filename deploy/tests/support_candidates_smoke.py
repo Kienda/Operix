@@ -162,6 +162,16 @@ def exercise(s):
     if s.sql(target, "SELECT count(*),sum(amount),count(*) FILTER(WHERE synthetic) FROM recovery_fixture") != "4|100.00|4":
         raise RuntimeError("PostgreSQL restart persistence differs")
     s.stop(target)
+    if os.environ.get("CI") == "true" and os.name != "nt":
+        # Exercise the exact operator recovery implementation, not a parallel toy.
+        recovery_dump = s.work / "candidate-recovery.dump"
+        recovery_dump.write_bytes(candidate_dump)
+        script = s.work / "recovery-wrapper.sh"
+        script.write_text('set -Eeuo pipefail\nsource "$1/deploy/scripts/recovery-common.sh"\n'
+                          'source "$1/deploy/scripts/restore-common.sh"\n'
+                          'operix_restore_archive "$2" "$3" "$4"\n')
+        subprocess.run(["bash", str(script), str(ROOT), str(recovery_dump),
+                        hashlib.sha256(candidate_dump).hexdigest(), POSTGRES], check=True, timeout=180)
     volume = s.volume("redis")
     old = s.start(OLD_REDIS, volume, "redis")
     s.redis(old, "MSET", "operix:fixture:one", "SYNTHETIC-é", "operix:fixture:two", "SYNTHETIC-ع")

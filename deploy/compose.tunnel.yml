@@ -4,7 +4,7 @@
 # Access policy listing the approved testers.
 services:
   tunnel:
-    image: ${ECR_REGISTRY:?set ECR_REGISTRY}/operix-tunnel:${IMAGE_TAG:?set IMAGE_TAG}
+    image: ${TUNNEL_IMAGE:?set immutable TUNNEL_IMAGE}
     command: [tunnel, --metrics, '127.0.0.1:20241', run, --token-file, /run/secrets/tunnel_token]
     restart: unless-stopped
     init: true

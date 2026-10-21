@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
-# Candidate-only internal builds. Publication and production adoption need separate approval.
+# Verified internal supporting images. Publication and host deployment need separate approval.
 ARG SOURCE_DATE_EPOCH=1792485048
 FROM --platform=$BUILDPLATFORM golang:1.27.3-bookworm@sha256:5c3e9b43cfd3bb95c7937462e29d87ada57b481a96fa23ad0eb61778d7a00110 AS gosu-builder
 ENV GOTOOLCHAIN=local CGO_ENABLED=0 GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org
@@ -31,7 +31,7 @@ RUN test "$(id -u postgres)" = 70 && test "$(id -g postgres)" = 70 \
 LABEL org.opencontainers.image.title="Operix internal PostgreSQL 16.15 candidate" \
       org.opencontainers.image.version="16.15-operix.1" \
       io.operix.gosu.source="6456aaa0f3c854d199d0f037f068eb97515b7513" \
-      io.operix.adoption="candidate-only; fresh volume or separately approved logical restore"
+      io.operix.adoption="fresh volume or separately approved logical restore"
 
 FROM scratch AS redis-packages
 ADD --checksum=sha256:3c6fb1c90a974ef0fc83687868712340ca3df3ef5206cfc79fd81ff16f22596a https://dl-cdn.alpinelinux.org/alpine/v3.21/main/x86_64/libcrypto3-3.3.7-r2.apk /amd64/libcrypto3.apk
