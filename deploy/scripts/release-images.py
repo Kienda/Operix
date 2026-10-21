@@ -79,6 +79,7 @@ def publish():
     run("python3", "deploy/tests/support_candidates_smoke.py")
     run("python3", "deploy/tests/smoke.py")
     run("python3", "deploy/tests/tunnel_smoke.py", "--image", "local/operix-tunnel:test")
+    identities = {name: run("docker", "image", "inspect", f"local/operix-{name}:test", "--format", "{{.Id}}", capture=True).strip() for name in NAMES}
     scan_all()
     images = {}
     # BatchGetImage is already within the approved repository-scoped read policy.
@@ -102,8 +103,11 @@ def publish():
             raise ValueError("Invalid registry digest")
         images[name] = f"{registry}/operix-{name}@{digest}"
     # Verify published artifacts by digest before any deployment artifact upload.
-    for image in images.values():
+    for name, image in images.items():
         run("docker", "pull", image)
+        actual = run("docker", "image", "inspect", image, "--format", "{{.Id}}", capture=True).strip()
+        if actual != identities[name]:
+            raise ValueError("Registry artifact differs from locally tested image: " + name)
         scan(image)
     manifest = {"schema": 1, "release": release, "images": images,
                 "storage": {"postgres": "16-alpine-uid70", "redis": "7.4-aof"}}

@@ -13,7 +13,7 @@ def validate(manifest, registry, release):
         raise ValueError("Invalid ECR registry")
     if not re.fullmatch(r"[0-9a-f]{40}-[0-9]+-[0-9]+", release):
         raise ValueError("Invalid release identity")
-    if set(manifest) != {"schema", "release", "images", "storage"} or manifest["schema"] != 1 or manifest["release"] != release:
+    if set(manifest) != {"schema", "release", "images", "storage"} or type(manifest["schema"]) is not int or manifest["schema"] != 1 or manifest["release"] != release:
         raise ValueError("Image manifest identity/schema mismatch")
     if manifest["storage"] != {"postgres": "16-alpine-uid70", "redis": "7.4-aof"}:
         raise ValueError("Unsupported database storage contract")

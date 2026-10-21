@@ -17,6 +17,7 @@ export RELEASE_SHA="${1:0:40}" IMAGE_TAG="$1" SECRETS_DIR="$RELEASE/runtime"
 # shellcheck source=deploy/scripts/load-images.sh
 source "$RELEASE/deploy/scripts/load-images.sh"
 operix_load_images
+[[ ! -e $BASE/current && ! -L $BASE/current || -f $BASE/support-storage.json ]] || { echo 'Existing release without storage identity requires separate review'; exit 1; }
 python3 "$RELEASE/deploy/scripts/support-storage.py" check "$RELEASE/deploy/images.json" "$BASE/support-storage.json"
 compose() {
   local files=(-f "$RELEASE/deploy/compose.yml")

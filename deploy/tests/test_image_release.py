@@ -1,6 +1,7 @@
 """Release provenance, immutable references, data continuity and publish fail-closed tests."""
 import copy
 import importlib.util
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -80,6 +81,30 @@ class ImageReleaseContracts(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     release.publish()
                 runner.assert_not_called()
+
+    def test_successful_publication_locks_registry_digests_after_exact_artifact_readback(self):
+        env = {"CI": "true", "GITHUB_REF": "refs/heads/main", "OPERIX_SUPPORT_PUBLICATION_APPROVED": "true",
+               "ACCOUNT": "471112967488", "GITHUB_SHA": "a" * 40, "GITHUB_RUN_ID": "1", "GITHUB_RUN_ATTEMPT": "1"}
+        calls, lookups = [], {}
+        def runner(*args, **kwargs):
+            calls.append(args)
+            if args[:3] == ("aws", "ecr", "batch-get-image"):
+                name = args[args.index("--repository-name") + 1]
+                lookups[name] = lookups.get(name, 0) + 1
+                if lookups[name] == 1:
+                    return json.dumps({"images": [], "failures": [{"failureCode": "ImageNotFound"}]})
+                return json.dumps({"images": [{"imageId": {"imageDigest": "sha256:" + "b" * 64}}], "failures": []})
+            if args[:3] == ("docker", "image", "inspect"):
+                return "sha256:" + "c" * 64
+            return ""
+        with patch.dict(os.environ, env), patch.object(release, "build"), patch.object(release, "scan") as scanner, \
+                patch.object(release, "run", side_effect=runner), patch.object(Path, "write_text") as writer:
+            release.publish()
+            self.assertEqual(sum(c[:2] == ("docker", "push") for c in calls), 7)
+            self.assertEqual(sum(c[:2] == ("docker", "pull") for c in calls), 7)
+            self.assertEqual(scanner.call_count, 14)
+            locked = json.loads(writer.call_args.args[0])
+            self.assertEqual(manifest.validate(locked, REGISTRY, RELEASE), fixture())
 
     def test_workflow_requires_all_security_jobs_and_separate_publication_approval(self):
         workflow = (ROOT / ".github/workflows/operix.yml").read_text()

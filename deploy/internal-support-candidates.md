@@ -80,7 +80,7 @@ succeed. Publication additionally requires main, the existing operix-images envi
 AWS enablement and a separate `OPERIX_SUPPORT_PUBLICATION_APPROVED=true` switch.
 This switch has not been enabled. No PR event can publish.
 
-Using existing BatchGetImage permission, publication checks that every unique
+Using the existing [BatchGetImage](https://docs.aws.amazon.com/AmazonECR/latest/APIReference/API_BatchGetImage.html) permission, publication checks that every unique
 commit/run/attempt tag is absent, pushes, reads back the registry digests, then pulls
 and scans every published digest. Failure prevents release artifact upload (partial
 immutable images can remain after a failed push/readback and require operator review;
@@ -114,6 +114,7 @@ The completed one-off Phase3B S3-writing rehearsal is retired to prevent acciden
 After all PR checks pass, approve merge and publication separately. Keep staging false.
 Then permit only the main publication workflow, capture all seven immutable ECR digests,
 verify scans/manifest/archive checksum, and turn the publication switch off again.
+Each pulled registry artifact must also match the locally tested image content ID.
 Publication approval does not authorize EC2 changes, live migrations, containers, backup
 timer installation, DNS, connector startup, Tontin changes or staging enablement.
 Unencrypted EBS permits synthetic data only. First deployment has no prior Operix
