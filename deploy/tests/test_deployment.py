@@ -13,6 +13,17 @@ spec.loader.exec_module(module)
 
 
 class SecretTests(unittest.TestCase):
+    def test_pure_validation_requires_tunnel_without_writing_files(self):
+        secret = self.secret()
+        module.validate(secret)
+        with self.assertRaises(ValueError):
+            module.validate(secret, require_tunnel=True)
+        with self.assertRaises(ValueError):
+            module.validate([])
+        with_token = {**secret, "CLOUDFLARE_TUNNEL_TOKEN": "A" * 180}
+        module.validate(with_token, require_tunnel=True)
+        self.assertEqual(module.credential_fingerprint(secret), module.credential_fingerprint(with_token))
+
     def secret(self):
         return {"DB_ADMIN_PASSWORD": "a" * 64, "DB_MIGRATE_PASSWORD": "b" * 64,
                 "DB_APP_PASSWORD": "c" * 64, "REDIS_PASSWORD": "d" * 64,
@@ -80,6 +91,15 @@ def compose_config(*overlays):
 
 
 class DeploymentContracts(unittest.TestCase):
+    def test_candidate_overlay_preserves_every_property_except_support_image_references(self):
+        original = compose_config()
+        candidate = compose_config("compose.support-candidate.yml")
+        for service in ("postgres", "redis"):
+            self.assertEqual(candidate["services"][service].pop("image"), f"local/operix-{service}:candidate")
+            original["services"][service].pop("image")
+        self.assertEqual(candidate, original)
+        self.assertNotIn("compose.support-candidate.yml", (ROOT / "deploy/scripts/deploy.sh").read_text())
+
     def test_compose_is_private_and_scoped(self):
         config = compose_config()
         self.assertEqual(config["name"], "operix-staging")

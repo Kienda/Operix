@@ -127,6 +127,23 @@ jobs:
             rm image.tar
           done
           exit "$scan_status"
+      - name: Scan PostgreSQL and Redis supporting images
+        if: ${{ !cancelled() }}
+        run: python3 deploy/tests/scan_support_images.py
+      - name: Build approved internal supporting candidates (no publication)
+        if: ${{ !cancelled() }}
+        run: |
+          docker build -f deploy/docker/support.Dockerfile --target postgres-candidate -t local/operix-postgres:candidate .
+          docker build -f deploy/docker/support.Dockerfile --target redis-candidate -t local/operix-redis:candidate .
+      - name: Supporting candidate synthetic restore and persistence compatibility
+        if: ${{ !cancelled() }}
+        run: python3 deploy/tests/support_candidates_smoke.py
+      - name: Supporting candidate application and migration compatibility (CI only)
+        if: ${{ !cancelled() }}
+        run: CI=true OPERIX_SUPPORT_CANDIDATES=1 python3 deploy/tests/smoke.py
+      - name: Scan internal supporting candidates
+        if: ${{ !cancelled() }}
+        run: python3 deploy/tests/scan_support_images.py --candidates
 
   publish:
     needs: [verify, security, images]
