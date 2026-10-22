@@ -26,6 +26,7 @@ export default async function globalSetup() {
       APP_URL: web,
       CORS_ORIGINS: web,
       OPERIX_MODULE_ALLOWLIST: 'core,crm,sales,projects',
+      SWAGGER_ENABLED: 'false',
     },
   });
   const run = randomUUID().slice(0, 8);
@@ -48,7 +49,7 @@ export default async function globalSetup() {
     } catch {}
     await delay(100);
   }
-  writeFileSync('e2e/.state.json', JSON.stringify({ web, api: stack.base, ownerEmail, run }));
+  writeFileSync('e2e/.state.json', JSON.stringify({ web, api: stack.base, ownerEmail, run, schema: stack.schema }));
   return async () => {
     preview.kill();
     await stack.stop();

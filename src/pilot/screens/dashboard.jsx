@@ -13,7 +13,7 @@ function metricLabel(metric, own) {
   const text = t(key);
   return text === key ? metric.label : text;
 }
-const LINKS ={ customers: '#/customers', quotations: '#/quotations?status=PENDING', projects: '#/projects?status=IN_PROGRESS', tasks: '#/tasks' };
+const LINKS ={ customers: '/customers', quotations: '/quotations?status=PENDING', projects: '/projects?status=IN_PROGRESS', tasks: '/tasks' };
 
 export default function Dashboard({ session }) {
   const summary = useResource(() => workspace.dashboard(), [session.organization.id]);
@@ -25,9 +25,9 @@ export default function Dashboard({ session }) {
     [session.user.id],
   );
   const quick = [
-    can(session, 'customers.create') && ['#/customers?new=1', 'dashboard.newCustomer'],
-    can(session, 'quotations.create') && ['#/quotations/new', 'dashboard.newQuotation'],
-    can(session, 'projects.create') && ['#/projects/new', 'dashboard.newProject'],
+    can(session, 'customers.create') && ['/customers?new=1', 'dashboard.newCustomer'],
+    can(session, 'quotations.create') && ['/quotations/new', 'dashboard.newQuotation'],
+    can(session, 'projects.create') && ['/projects/new', 'dashboard.newProject'],
   ].filter(Boolean);
   return (
     <>
@@ -47,7 +47,7 @@ export default function Dashboard({ session }) {
             {data.metrics.map((metric) => {
               const Icon = ICONS[metric.key] ?? ListTodo;
               return (
-                <a key={metric.key} className="px-metric" href={LINKS[metric.key] ?? '#/'}>
+                <a key={metric.key} className="px-metric" href={LINKS[metric.key] ?? '/dashboard'}>
                   <span className="px-metric-icon" aria-hidden="true">
                     <Icon />
                   </span>
@@ -64,7 +64,7 @@ export default function Dashboard({ session }) {
         <section className="px-card">
           <div className="px-card-head">
             <h2>{t('dashboard.myTasks')}</h2>
-            <a className="px-link" href="#/tasks">
+            <a className="px-link" href="/tasks">
               {t('common.viewAll')} <ArrowRight aria-hidden="true" />
             </a>
           </div>
@@ -73,7 +73,7 @@ export default function Dashboard({ session }) {
               <ul className="px-list">
                 {data.data.map((task) => (
                   <li key={task.id}>
-                    <a href={`#/tasks?focus=${task.id}`}>
+                    <a href={`/tasks?focus=${task.id}`}>
                       <b>{task.name}</b>
                       <span>
                         {data.related.records[task.data.projectId]?.name ?? t('tasks.restrictedProject')}

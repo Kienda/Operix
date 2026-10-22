@@ -1,6 +1,5 @@
-// Build-time switch. The production pilot ships only the staff application; the
-// earlier prototype (marketing site + mock-data modules) is opt-in for local
-// design work with VITE_OPERIX_EXPERIENCE=prototype and is tree-shaken otherwise.
+// The pilot owns the shared public landing page and real staff authentication.
+// The earlier prototype's dashboards remain opt-in for local design work only.
 if (import.meta.env.VITE_OPERIX_EXPERIENCE === 'prototype') {
   import('./main.jsx');
 } else {

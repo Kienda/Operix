@@ -81,7 +81,7 @@ export function SignIn({ notice }) {
         ...(form.organizationSlug ? { organizationSlug: form.organizationSlug } : {}),
       });
       session.set(result);
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       if (err.code === 'MFA_REQUIRED') setStep('mfa');
       else if (err.code === 'WORKSPACE_SELECTION_REQUIRED') {
@@ -140,7 +140,7 @@ export function SignIn({ notice }) {
             {t('auth.back')}
           </button>
         )}
-        <a className="px-link" href="#/forgot-password">
+        <a className="px-link" href="/forgot-password">
           {t('auth.forgot')}
         </a>
       </form>
@@ -181,7 +181,7 @@ export function ForgotPassword() {
           </button>
         </form>
       )}
-      <a className="px-link" href="#/">
+      <a className="px-link" href="/login">
         {t('auth.backToSignIn')}
       </a>
     </AuthLayout>
@@ -214,7 +214,7 @@ export function ResetPassword({ token }) {
     setError('');
     try {
       await auth.reset(token, password);
-      navigate('/?notice=reset', { replace: true });
+      navigate('/login?notice=reset', { replace: true });
     } catch (err) {
       setError(err.status === 401 ? t('auth.linkInvalid') : err.message);
       setBusy(false);
@@ -252,7 +252,7 @@ export function AcceptInvite({ token }) {
         lastName: form.lastName.trim() || '-',
         password: form.password,
       });
-      navigate('/?notice=invited', { replace: true });
+      navigate('/login?notice=invited', { replace: true });
     } catch (err) {
       if (err.code === 'EXISTING_ACCOUNT_PASSWORD_REQUIRED') {
         setExisting(true);

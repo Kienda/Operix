@@ -39,7 +39,7 @@ export function QuotationList({ session, query }) {
         description={t('quotes.subtitle')}
         actions={
           can(session, 'quotations.create') && (
-            <a className="px-btn px-btn-primary" href="#/quotations/new">
+            <a className="px-btn px-btn-primary" href="/quotations/new">
               <Plus aria-hidden="true" /> {t('dashboard.newQuotation')}
             </a>
           )
@@ -64,7 +64,7 @@ export function QuotationList({ session, query }) {
             <>
               <RecordTable
                 caption={t('quotes.title')}
-                href={(row) => `#/quotations/${row.id}`}
+                href={(row) => `/quotations/${row.id}`}
                 rows={data.data}
                 columns={[
                   { key: 'number', label: t('quotes.number'), render: (r) => <><b>{r.number}</b><small className="px-cell-sub">{r.name}</small></> },
@@ -164,7 +164,7 @@ export function QuotationEditor({ session, id, query = {} }) {
   return (
     <>
       <PageHeader
-        eyebrow={<a href="#/quotations">{t('quotes.title')}</a>}
+        eyebrow={<a href="/quotations">{t('quotes.title')}</a>}
         title={id ? t('quotes.editTitle', { number: existing.data.number }) : t('dashboard.newQuotation')}
         description={t('quotes.editorHint')}
       />
@@ -250,7 +250,7 @@ export function QuotationEditor({ session, id, query = {} }) {
         </Field>
         {error && <FormError>{error}</FormError>}
         <div className="px-actions">
-          <a className="px-btn px-btn-secondary" href={id ? `#/quotations/${id}` : '#/quotations'}>
+          <a className="px-btn px-btn-secondary" href={id ? `/quotations/${id}` : '/quotations'}>
             {t('common.cancel')}
           </a>
           <button className="px-btn px-btn-primary" disabled={busy}>
@@ -285,7 +285,7 @@ export function QuotationDetail({ id, session }) {
         return (
           <article className="px-quote">
             <PageHeader
-              eyebrow={<a href="#/quotations">{t('quotes.title')}</a>}
+              eyebrow={<a href="/quotations">{t('quotes.title')}</a>}
               title={`${q.number} · ${q.name}`}
               description={<StatusBadge module="quotations" status={q.status} data={q.data} />}
               actions={
@@ -294,12 +294,12 @@ export function QuotationDetail({ id, session }) {
                     <Printer aria-hidden="true" /> {t('quotes.print')}
                   </button>
                   {q.status === 'DRAFT' && can(session, 'quotations.create') && (
-                    <a className="px-btn px-btn-secondary" href={`#/quotations/${q.id}/edit`}>
+                    <a className="px-btn px-btn-secondary" href={`/quotations/${q.id}/edit`}>
                       <Pencil aria-hidden="true" /> {t('common.edit')}
                     </a>
                   )}
                   {q.status === 'APPROVED' && can(session, 'projects.create') && (
-                    <a className="px-btn px-btn-primary" href={`#/projects/new?customerId=${q.data.customerId}&quotationId=${q.id}`}>
+                    <a className="px-btn px-btn-primary" href={`/projects/new?customerId=${q.data.customerId}&quotationId=${q.id}`}>
                       <Plus aria-hidden="true" /> {t('quotes.createProject')}
                     </a>
                   )}
@@ -320,7 +320,7 @@ export function QuotationDetail({ id, session }) {
                 <h2>{t('quotes.summary')}</h2>
                 <DefinitionList
                   items={[
-                    [t('common.customer'), customer ? <a href={`#/customers/${q.data.customerId}`}>{customer.name}</a> : t('common.restricted')],
+                    [t('common.customer'), customer ? <a href={`/customers/${q.data.customerId}`}>{customer.name}</a> : t('common.restricted')],
                     [t('common.branch'), branchName(session, q.branchId)],
                     [t('quotes.issued'), date(q.createdAt)],
                     [t('quotes.validUntil'), date(q.data.validUntil)],
