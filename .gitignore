@@ -70,3 +70,5 @@ e2e/report/
 e2e/.state.json
 playwright-report/
 test-results/
+# Generated only during approved immutable image publication
+/deploy/images.json

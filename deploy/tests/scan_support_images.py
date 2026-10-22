@@ -2,6 +2,7 @@
 """Scan the actual Compose PostgreSQL/Redis references without starting services."""
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -21,7 +22,14 @@ def configured_images():
                              "config", "--format", "json"], env=env, check=True,
                             capture_output=True, text=True)
     services = json.loads(result.stdout)["services"]
-    return {name: services[name]["image"] for name in ("postgres", "redis")}
+    images = {name: services[name]["image"] for name in ("postgres", "redis")}
+    for name, image in images.items():
+        local = re.fullmatch(r"sha256:[0-9a-f]{64}", image)
+        if local and os.environ.get("CI") != "true":
+            raise ValueError("Local content IDs are for disposable CI only")
+        if not local and not re.fullmatch(r"[0-9]{12}\.dkr\.ecr\.us-east-1\.amazonaws\.com/operix-" + name + r"@sha256:[0-9a-f]{64}", image):
+            raise ValueError("Supporting images must use immutable approved ECR references")
+    return images
 
 
 def scan_images(images, directory, runner=subprocess.run, *, pull=True):
@@ -54,7 +62,7 @@ def main():
     images = ({name: f"local/operix-{name}:candidate" for name in ("postgres", "redis")}
               if candidates else configured_images())
     with tempfile.TemporaryDirectory(prefix="operix-support-scan-") as directory:
-        return scan_images(images, Path(directory).resolve(), pull=not candidates)
+        return scan_images(images, Path(directory).resolve(), pull=not candidates and not all(re.fullmatch(r"sha256:[0-9a-f]{64}", image) for image in images.values()))
 
 
 if __name__ == "__main__":

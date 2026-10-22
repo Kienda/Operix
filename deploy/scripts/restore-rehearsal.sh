@@ -7,7 +7,17 @@ umask 077
 HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=deploy/scripts/recovery-common.sh
 source "$HERE/recovery-common.sh"
-IMAGE=postgres:16-bookworm@sha256:0ea6700a3b4f0ae6ce746519073558aed4d88a79d8d07622a9a644946c7319c4
+# Use the current reviewed release's immutable PostgreSQL recovery image.
+# This does not fetch runtime secrets or grant additional S3 read permissions.
+RELEASE=${OPERIX_RECOVERY_RELEASE_DIR:-$(readlink -f /opt/ght/apps/operix/current)}
+[[ -d $RELEASE ]] || { echo 'Provide a checksum-verified release directory via OPERIX_RECOVERY_RELEASE_DIR' >&2; exit 1; }
+export ECR_REGISTRY=471112967488.dkr.ecr.us-east-1.amazonaws.com
+IMAGE_TAG=$(basename "$RELEASE")
+export IMAGE_TAG
+# shellcheck source=deploy/scripts/load-images.sh
+source "$HERE/load-images.sh"
+operix_load_images
+IMAGE=$POSTGRES_IMAGE
 LOCAL_ARCHIVE='' EXPECTED='' KEY=''
 if [[ $# == 4 && $1 == --archive && $3 == --sha256 ]]; then
   LOCAL_ARCHIVE=$2 EXPECTED=$4

@@ -17,6 +17,10 @@ CURRENT=$(readlink -f "$BASE/current") || { echo 'No deployed Operix release to 
 IMAGE_TAG=$(basename "$CURRENT")
 export ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com"
 export IMAGE_TAG RELEASE_SHA="${IMAGE_TAG:0:40}" SECRETS_DIR="$CURRENT/runtime"
+RELEASE="$CURRENT"
+# shellcheck source=deploy/scripts/load-images.sh
+source "$CURRENT/deploy/scripts/load-images.sh"
+operix_load_images
 compose() {
   local files=(-f "$CURRENT/deploy/compose.yml")
   case ${PROXY_MODE:-host} in

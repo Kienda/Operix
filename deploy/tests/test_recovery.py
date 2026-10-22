@@ -113,6 +113,7 @@ docker() {
   printf 'docker %s\n' "$*" >> "$TEST_DIR/trace"
   case "$1" in
     image) [[ $FAULT != image_missing ]];;
+    run) [[ $FAULT != uid_mismatch ]] || { printf "999\n"; return; }; printf "70\n";;
     container) [[ $FAULT == name_collision ]];;
     create) [[ $FAULT != create_failure ]] || return 1; printf '%064d\n' 1;;
     start) [[ $FAULT != start_failure ]];;
@@ -134,7 +135,7 @@ docker() {
   esac
 }
 sleep() { :; }
-operix_restore_archive "$TEST_DIR/input.dump" ''' + shlex.quote(checksum) + ' postgres:16-bookworm@sha256:' + 'a' * 64 + (' synthetic-phase3b' if fixture else '') + r'''
+operix_restore_archive "$TEST_DIR/input.dump" ''' + shlex.quote(checksum) + ' 471112967488.dkr.ecr.us-east-1.amazonaws.com/operix-postgres@sha256:' + 'a' * 64 + (' synthetic-phase3b' if fixture else '') + r'''
 printf 'verified' > "$TEST_DIR/next-step"
 ''', fault)
 
@@ -147,7 +148,7 @@ printf 'verified' > "$TEST_DIR/next-step"
                 self.assertEqual(list(self.work.glob('tmp.*')), [])
 
     def test_restore_failures_cleanup_only_created_id_and_never_report_success(self):
-        for fault in ['image_missing', 'name_collision', 'create_failure', 'start_failure',
+        for fault in ['image_missing', 'uid_mismatch', 'name_collision', 'create_failure', 'start_failure',
                       'readiness_failure', 'list_failure', 'restore_failure', 'sql_failure',
                       'empty_schema', 'cleanup_failure']:
             with self.subTest(fault=fault):
@@ -156,7 +157,7 @@ printf 'verified' > "$TEST_DIR/next-step"
                 self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertFalse((self.work / 'next-step').exists())
                 trace = self.trace()
-                if fault in ['image_missing', 'name_collision', 'create_failure']:
+                if fault in ['image_missing', 'uid_mismatch', 'name_collision', 'create_failure']:
                     self.assertNotIn('docker rm ', trace)
                 else:
                     self.assertIn('docker rm -fv ' + '0' * 63 + '1', trace)
@@ -171,7 +172,7 @@ printf 'verified' > "$TEST_DIR/next-step"
         self.assertEqual(result.returncode, 0, result.stderr)
         trace = self.trace()
         for required in ['--network none', '--memory 512m', '--cpus 0.5', '--read-only',
-                         '--cap-drop ALL', '--user 999:999', '--exit-on-error',
+                         '--cap-drop ALL', '--user 70:70', '--exit-on-error',
                          '--pull=never', '--tmpfs /var/lib/postgresql/data:', 'docker rm -fv']:
             self.assertIn(required, trace)
         self.assertNotIn('--publish', trace)

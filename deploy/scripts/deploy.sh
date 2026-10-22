@@ -14,6 +14,11 @@ set +a
 [[ $AWS_REGION == us-east-1 && $AWS_ACCOUNT_ID =~ ^[0-9]{12}$ && $PROXY_MODE =~ ^(host|docker-edge|tunnel)$ ]] || exit 2
 export ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com"
 export RELEASE_SHA="${1:0:40}" IMAGE_TAG="$1" SECRETS_DIR="$RELEASE/runtime"
+# shellcheck source=deploy/scripts/load-images.sh
+source "$RELEASE/deploy/scripts/load-images.sh"
+operix_load_images
+[[ ! -e $BASE/current && ! -L $BASE/current || -f $BASE/support-storage.json ]] || { echo 'Existing release without storage identity requires separate review'; exit 1; }
+python3 "$RELEASE/deploy/scripts/support-storage.py" check "$RELEASE/deploy/images.json" "$BASE/support-storage.json"
 compose() {
   local files=(-f "$RELEASE/deploy/compose.yml")
   case $PROXY_MODE in
@@ -32,6 +37,13 @@ done
 [[ $(df --output=avail -k "$BASE" | tail -1) -gt 10485760 ]] || { echo 'Need 10 GiB free for release and backup'; exit 1; }
 [[ $(awk '/MemAvailable:/ {print $2}' /proc/meminfo) -gt 2097152 ]] || { echo 'Need 2 GiB available; preserve Tontin headroom'; exit 1; }
 PREVIOUS=$(readlink -f "$BASE/current" || true)
+rollback_compatible() {
+  [[ -n $PREVIOUS && -f $PREVIOUS/deploy/images.json ]] &&
+    cmp -s "$PREVIOUS/migrations.sha256" "$RELEASE/migrations.sha256" &&
+    cmp -s "$PREVIOUS/runtime/credential-fingerprint" "$RELEASE/runtime/credential-fingerprint" &&
+    python3 "$RELEASE/deploy/scripts/image-manifest.py" "$PREVIOUS/deploy/images.json" "$ECR_REGISTRY" "$(basename "$PREVIOUS")" > /dev/null &&
+    python3 "$RELEASE/deploy/scripts/support-storage.py" check "$PREVIOUS/deploy/images.json" "$BASE/support-storage.json"
+}
 if [[ $2 == deploy ]]; then
   [[ ! -e $SECRETS_DIR ]] || { echo 'Release already prepared; use a new run attempt'; exit 1; }
   python3 "$RELEASE/deploy/scripts/prepare-secrets.py" "$SECRETS_DIR"
@@ -42,6 +54,7 @@ if [[ $2 == deploy ]]; then
 else
   [[ -f $SECRETS_DIR/api.json && -n $PREVIOUS ]] || exit 1
   cmp -s "$PREVIOUS/migrations.sha256" "$RELEASE/migrations.sha256" || { echo 'Schema differs: rollback requires a compatibility review and separate approval'; exit 1; }
+  cmp -s "$PREVIOUS/runtime/credential-fingerprint" "$SECRETS_DIR/credential-fingerprint" || { echo 'Credential mismatch: rollback requires separate approval'; exit 1; }
 fi
 # ECR auth is kept in a per-deployment temporary directory, never the shared host config.
 export DOCKER_CONFIG
@@ -54,6 +67,7 @@ compose pull postgres redis
 if [[ $2 == deploy ]]; then
   # Do not silently recreate infrastructure on an application release.
   compose up -d --no-recreate --wait --wait-timeout 120 postgres redis
+  python3 "$RELEASE/deploy/scripts/support-storage.py" record "$RELEASE/deploy/images.json" "$BASE/support-storage.json"
   if [[ -n $PREVIOUS ]]; then
     # Operix-only maintenance window. Tontin is never named or restarted.
     compose stop web api
@@ -72,12 +86,14 @@ fi
 if ! { compose up -d --no-deps --wait --wait-timeout 180 api web &&
   curl --fail --silent --max-time 10 "http://127.0.0.1:$OPERIX_HTTP_PORT/healthz" >/dev/null &&
   curl --fail --silent --max-time 10 "http://127.0.0.1:$OPERIX_HTTP_PORT/api/v1/health" >/dev/null; }; then
-  if [[ -n $PREVIOUS ]] && cmp -s "$PREVIOUS/migrations.sha256" "$RELEASE/migrations.sha256"; then
+  if rollback_compatible; then
     IMAGE_TAG=$(basename "$PREVIOUS")
     RELEASE_SHA=${IMAGE_TAG:0:40}
     SECRETS_DIR="$PREVIOUS/runtime"
     export IMAGE_TAG RELEASE_SHA SECRETS_DIR
     RELEASE="$PREVIOUS"
+    operix_load_images
+    python3 "$RELEASE/deploy/scripts/support-storage.py" check "$RELEASE/deploy/images.json" "$BASE/support-storage.json"
     compose up -d --no-deps --wait --wait-timeout 180 api web "${EDGE[@]}"
     echo 'New release failed health checks; previous application images restored.' >&2
   else
