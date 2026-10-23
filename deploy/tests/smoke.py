@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the actual Linux release images on a disposable Compose project."""
 import importlib.util
+import argparse
 import json
 import os
 from pathlib import Path
@@ -9,15 +10,19 @@ import subprocess
 import tempfile
 import time
 import urllib.request
+from smoke_images import select_images
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("prepare", ROOT / "deploy/scripts/prepare-secrets.py")
 prepare = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(prepare)
 candidate_mode = os.environ.get("OPERIX_SUPPORT_CANDIDATES") == "1"
-if candidate_mode and os.environ.get("CI") != "true":
-    raise SystemExit("Candidate application/migration smoke runs only in disposable CI")
-project = "operix-support-image-smoke" if candidate_mode else "operix-image-smoke"
+parser = argparse.ArgumentParser()
+parser.add_argument("--images-file", help="CI-only exact content IDs selected by the release publisher")
+args = parser.parse_args()
+selected = select_images(args.images_file, candidate_mode)
+project = ("operix-release-selected-smoke" if args.images_file else
+           "operix-support-image-smoke" if candidate_mode else "operix-image-smoke")
 with tempfile.TemporaryDirectory(prefix="operix-smoke-") as directory:
     target = Path(directory) / "runtime"
     secret = {k: secrets.token_hex(48) for k in ["DB_ADMIN_PASSWORD", "DB_MIGRATE_PASSWORD", "DB_APP_PASSWORD", "REDIS_PASSWORD", "JWT_ACCESS_SECRET"]}
@@ -27,11 +32,7 @@ with tempfile.TemporaryDirectory(prefix="operix-smoke-") as directory:
            "RELEASE_SHA": "a" * 40, "SECRETS_DIR": str(target),
            "APP_URL": "https://operix.globalhightech.com", "MAIL_FROM": "test@operix.test",
            "SMTP_HOST": "unused.invalid", "OPERIX_HTTP_PORT": "18081"}
-    for name in ("api", "worker", "migrate", "web", "tunnel", "postgres", "redis"):
-        local = f"local/operix-{name}:" + ("candidate" if candidate_mode and name in ("postgres", "redis") else "test")
-        env[name.upper() + "_IMAGE"] = subprocess.run(
-            ["docker", "image", "inspect", local, "--format", "{{.Id}}"], check=True,
-            capture_output=True, text=True).stdout.strip()
+    env.update({name.upper() + "_IMAGE": image for name, image in selected.items()})
     command = ["docker", "compose", "-p", project, "-f", str(ROOT / "deploy/compose.yml")]
 
     def compose(*args, capture=False):
