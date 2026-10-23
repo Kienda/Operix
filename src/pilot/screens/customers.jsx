@@ -81,7 +81,7 @@ export function CustomerList({ session, query }) {
             <>
               <RecordTable
                 caption={t('customers.title')}
-                href={(row) => `#/customers/${row.id}`}
+                href={(row) => `/customers/${row.id}`}
                 rows={data.data}
                 columns={[
                   { key: 'name', label: t('common.name'), render: (r) => <><b>{r.name}</b><small className="px-cell-sub">{r.number}</small></> },
@@ -271,18 +271,18 @@ export function CustomerDetail({ id, session }) {
       {(c) => (
         <>
           <PageHeader
-            eyebrow={<a href="#/customers">{t('customers.title')}</a>}
+            eyebrow={<a href="/customers">{t('customers.title')}</a>}
             title={c.name}
             description={`${c.number ?? ''} · ${branchName(session, c.branchId)}`}
             actions={
               <>
                 {can(session, 'quotations.create') && (
-                  <a className="px-btn px-btn-secondary" href={`#/quotations/new?customerId=${c.id}`}>
+                  <a className="px-btn px-btn-secondary" href={`/quotations/new?customerId=${c.id}`}>
                     <Plus aria-hidden="true" /> {t('dashboard.newQuotation')}
                   </a>
                 )}
                 {can(session, 'projects.create') && (
-                  <a className="px-btn px-btn-secondary" href={`#/projects/new?customerId=${c.id}`}>
+                  <a className="px-btn px-btn-secondary" href={`/projects/new?customerId=${c.id}`}>
                     <Plus aria-hidden="true" /> {t('dashboard.newProject')}
                   </a>
                 )}
@@ -327,7 +327,7 @@ export function CustomerDetail({ id, session }) {
                       <ul className="px-list">
                         {data.data.map((q) => (
                           <li key={q.id}>
-                            <a href={`#/quotations/${q.id}`}>
+                            <a href={`/quotations/${q.id}`}>
                               <b>{q.number} · {q.name}</b>
                               <span>{money(q.data.total, q.data.currency)}</span>
                             </a>
@@ -347,7 +347,7 @@ export function CustomerDetail({ id, session }) {
                       <ul className="px-list">
                         {data.data.map((p) => (
                           <li key={p.id}>
-                            <a href={`#/projects/${p.id}`}>
+                            <a href={`/projects/${p.id}`}>
                               <b>{p.number} · {p.name}</b>
                               <span>{p.data.dueDate ? t('tasks.due', { date: date(p.data.dueDate) }) : ''}</span>
                             </a>

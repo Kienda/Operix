@@ -224,6 +224,8 @@ test('dialogs trap focus and close with Escape; French is available', async () =
 test('phone layout: navigation drawer and readable task cards', async ({ browser }) => {
   const page = await open(browser, 'employee-mobile', { width: 390, height: 844 });
   await page.goto('/');
+  await page.getByRole('button', { name: 'Toggle navigation' }).click();
+  await page.getByRole('link', { name: 'Login', exact: true }).click();
   await signIn(page, 'employee');
   await expect(page.getByRole('heading', { name: 'Welcome, Ibrahima' })).toBeVisible();
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);

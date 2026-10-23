@@ -13,7 +13,7 @@ import { config } from '../platform/config';
 import { logEvent } from '../platform/logger';
 
 export const RATE_LIMIT = 'operix:rate-limit';
-/** Throttles a public authentication action per client IP and per submitted identity. */
+/** Throttles authentication per client IP and, for login, across IPs per identity. */
 export const RateLimit = (bucket: string) => SetMetadata(RATE_LIMIT, bucket);
 
 /**
@@ -64,7 +64,17 @@ export class RateLimitGuard implements CanActivate {
     const ip = req.ip ?? 'unknown';
     const checks = [hit(`${bucket}:ip:${ip}`, perIp, windowMs, now)];
     const identity = identityOf(req);
-    if (identity) checks.push(hit(`${bucket}:id:${identity}:${ip}`, perIdentity, windowMs, now));
+    // Rotating client IPs must not reset the login/MFA guessing budget. This is
+    // a temporary identity cooldown, not a permanent account-status change.
+    if (identity)
+      checks.push(
+        hit(
+          `${bucket}:id:${identity}${bucket === 'login' ? '' : `:${ip}`}`,
+          perIdentity,
+          windowMs,
+          now,
+        ),
+      );
     const blocked = checks.find((c) => !c.allowed);
     if (blocked) {
       res.setHeader('Retry-After', String(Math.ceil((blocked.resetAt - now) / 1000)));

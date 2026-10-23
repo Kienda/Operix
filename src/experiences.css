@@ -37,3 +37,7 @@
 @media(hover:hover) and (pointer:fine){.hero-actions button:hover svg,.cta button:hover svg{transform:translateX(4px)}}
 @media(max-width:700px){.hero-visual{transform:none;transition:none}.hero-visual::after{display:none}.floating-card{animation:heroRise .55s cubic-bezier(.22,1,.36,1) .3s both}}
 @media(prefers-reduced-motion:reduce){.hero-actions button svg,.cta button svg{transition:none;transform:none!important}}
+
+/* Login keeps the existing CTA appearance while exposing a real URL. */
+.public-site .nav-login { height: 37px; border-radius: 7px; padding: 0 14px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.public-site > main { margin: 0; width: 100%; }

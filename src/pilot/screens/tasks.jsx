@@ -194,7 +194,7 @@ export default function TaskList({ session, query }) {
                     label: t('tasks.project'),
                     render: (r) =>
                       data.related.records[r.data.projectId] && can(session, 'projects.view') ? (
-                        <a href={`#/projects/${r.data.projectId}`}>{data.related.records[r.data.projectId].name}</a>
+                        <a href={`/projects/${r.data.projectId}`}>{data.related.records[r.data.projectId].name}</a>
                       ) : (
                         data.related.records[r.data.projectId]?.name ?? t('tasks.restrictedProject')
                       ),
