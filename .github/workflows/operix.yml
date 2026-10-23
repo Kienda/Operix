@@ -148,7 +148,7 @@ jobs:
           role-to-assume: ${{ vars.OPERIX_ECR_ROLE_ARN }}
           aws-region: us-east-1
           allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
-      - name: Build, scan and publish unique release tags
+      - name: Build, scan and publish application images with retained supporting digests
         env:
           ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
           OPERIX_SUPPORT_PUBLICATION_APPROVED: ${{ vars.OPERIX_SUPPORT_PUBLICATION_APPROVED }}
@@ -156,7 +156,7 @@ jobs:
           set -euo pipefail
           registry="$ACCOUNT.dkr.ecr.us-east-1.amazonaws.com"
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$registry"
-          python3 deploy/scripts/release-images.py publish
+          python3 deploy/scripts/release-images.py publish --retain-support
       - name: Package deployment configuration
         id: package
         env:

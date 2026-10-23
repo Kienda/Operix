@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "source_release": "2d899cb8f3eab63f2b197a7e04e2efb8aa9ff7a5-39704047009-2",
+  "storage": {
+    "postgres": "16-alpine-uid70",
+    "redis": "7.4-aof"
+  },
+  "images": {
+    "postgres": "471112967488.dkr.ecr.us-east-1.amazonaws.com/operix-postgres@sha256:33341234955a890b4832395d16100bcc1bfd0812a38012e8d81b7404bc6eddf9",
+    "redis": "471112967488.dkr.ecr.us-east-1.amazonaws.com/operix-redis@sha256:6aa8592b54375bb6c6a1f9f5030d62ce2349f51a59ca4a7dfe7df1da7bf571d5"
+  },
+  "build_inputs": {
+    "deploy/docker/support.Dockerfile": "8fe78749282307d5078fc089a5d82410a6fe8ee9083f0b13c5239e643789ad01",
+    "deploy/docker/init-db.sh": "4109c9becb9a1ce8fc621c99d53aeb34bf08786877f507c6c7cfa25bcfc9f2fb",
+    "deploy/docker/redis-start.sh": "159aa2e47bfd1f81f0947a83e9ead05d340e0770d2f3cc5aa64ec6c94c952367",
+    "deploy/docker/support/go.mod": "0475f1708db81d718b633faf2d9dd64695037eabdc8562125060607bcb01b2ba",
+    "deploy/docker/support/go.sum": "2a8f3fb6adb84839bbb9999f12f1416fb86c184135aaa1c2e489b35203c08346",
+    "deploy/docker/support/locks.sha256": "63a97b1b62c2b760d0669a670f8015677580c86dc9d92acbc4383808f2f16b99",
+    "deploy/docker/support/provenance.json": "80fa893a2c24318cc5e81f64bad466ffbc49d2827e49a27a4613f07a1e6b39d3"
+  }
+}
