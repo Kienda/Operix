@@ -32,7 +32,7 @@ FROM builder AS tunnel-tests
 # Upstream ICMP tests need a namespaced ping_group_range; set it only on docker run.
 CMD ["go", "test", "-mod=readonly", "-count=1", "./config", "./ingress", "./cmd/cloudflared/cliutil", "./validation"]
 
-FROM gcr.io/distroless/static-debian13:nonroot@sha256:516757106de35205efb70b91ba03f6f1298424a0678c603255cf2852a7000087 AS tunnel
+FROM gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99 AS tunnel
 LABEL org.opencontainers.image.source="https://github.com/cloudflare/cloudflared" \
       org.opencontainers.image.revision="002a5ccaf75a4e612bfa451063c1d82a2d13336b" \
       org.opencontainers.image.version="2026.10.2-operix.1" \
