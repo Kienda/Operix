@@ -20,7 +20,7 @@ RUN test "$TARGETOS" = linux && case "$TARGETARCH" in amd64|arm64) ;; *) exit 1;
     && grep -q 'go1.27.3' /out/build-info.txt \
     && cmp go.mod /locks/go.mod && cmp go.sum /locks/go.sum
 
-FROM postgres:16.15-alpine3.24@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea AS postgres-candidate
+FROM postgres:18.6-alpine3.24@sha256:898c60cb390d1085bc97bdd6a1ae968757421df394b071848b52b1c09c89d6a5 AS postgres-candidate
 COPY --from=gosu-builder --chmod=0755 /out/gosu /usr/local/bin/gosu
 COPY --from=gosu-builder /out/build-info.txt /usr/local/share/operix/gosu-build-info.txt
 # Preserve Alpine's upstream UID/GID (70). GID 999 belongs to ping on this base;
