@@ -39,7 +39,7 @@ ADD --checksum=sha256:00e674d00a80c9808580546dd388093c1c67f21628a9d70e27628bddc8
 ADD --checksum=sha256:2303cca13dc8bba5798744a68abd07530abb35ab339d9cc4640fc53276049af0 https://dl-cdn.alpinelinux.org/alpine/v3.21/main/aarch64/libcrypto3-3.3.7-r2.apk /arm64/libcrypto3.apk
 ADD --checksum=sha256:d494a0a211dd78a8055c24885fc06375eabb79c82ae797f7f694cefbf3653b79 https://dl-cdn.alpinelinux.org/alpine/v3.21/main/aarch64/libssl3-3.3.7-r2.apk /arm64/libssl3.apk
 
-FROM redis:7.4.11-alpine3.21@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499 AS redis-candidate
+FROM redis:8.0.6-alpine3.21@sha256:5f61955be8ab2ccee9372b84ae4d4da2e2b156f87281e3f218544055e7ee04d4 AS redis-candidate
 ARG TARGETARCH
 # Local APKs are checksum-pinned above AND verified against the base's Alpine keys.
 # No --allow-untrusted, repository rewrite, general upgrade, or other package changes.
