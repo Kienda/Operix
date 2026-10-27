@@ -1,0 +1,662 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "REVIEW ONLY: isolated Operix staging artifacts, ECR and OIDC/SSM permissions. No EC2, Tontin, DNS or proxy changes.",
+  "Parameters": {
+    "GitHubOidcProviderArn": {
+      "Type": "String",
+      "Description": "Existing token.actions.githubusercontent.com provider ARN"
+    },
+    "OperixInstanceId": {
+      "Type": "String",
+      "AllowedPattern": "i-[a-f0-9]{8,17}",
+      "Description": "Existing shared EC2 instance ID, not its IP"
+    },
+    "InstanceRoleName": {
+      "Type": "String",
+      "Description": "Existing EC2 instance role; attach ONLY after approval and permission review"
+    },
+    "RuntimeSecretArn": {
+      "Type": "String",
+      "Description": "Existing dedicated operix/staging/runtime Secrets Manager ARN",
+      "Default": "arn:aws:secretsmanager:us-east-1:471112967488:secret:operix/staging/runtime-JErDWK"
+    },
+    "SecretKmsKeyArn": {
+      "Type": "String",
+      "Description": "Dedicated customer-managed KMS key for the runtime secret"
+    }
+  },
+  "Resources": {
+    "ApiRepository": {
+      "Type": "AWS::ECR::Repository",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "RepositoryName": "operix-api",
+        "ImageTagMutability": "IMMUTABLE",
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true
+        },
+        "EncryptionConfiguration": {
+          "EncryptionType": "AES256"
+        },
+        "LifecyclePolicy": {
+          "LifecyclePolicyText": "{\"rules\":[{\"rulePriority\":1,\"description\":\"Expire untagged build layers only\",\"selection\":{\"tagStatus\":\"untagged\",\"countType\":\"sinceImagePushed\",\"countUnit\":\"days\",\"countNumber\":7},\"action\":{\"type\":\"expire\"}}]}"
+        },
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": "Operix"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "WorkerRepository": {
+      "Type": "AWS::ECR::Repository",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "RepositoryName": "operix-worker",
+        "ImageTagMutability": "IMMUTABLE",
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true
+        },
+        "EncryptionConfiguration": {
+          "EncryptionType": "AES256"
+        },
+        "LifecyclePolicy": {
+          "LifecyclePolicyText": "{\"rules\":[{\"rulePriority\":1,\"description\":\"Expire untagged build layers only\",\"selection\":{\"tagStatus\":\"untagged\",\"countType\":\"sinceImagePushed\",\"countUnit\":\"days\",\"countNumber\":7},\"action\":{\"type\":\"expire\"}}]}"
+        },
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": "Operix"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "MigrateRepository": {
+      "Type": "AWS::ECR::Repository",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "RepositoryName": "operix-migrate",
+        "ImageTagMutability": "IMMUTABLE",
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true
+        },
+        "EncryptionConfiguration": {
+          "EncryptionType": "AES256"
+        },
+        "LifecyclePolicy": {
+          "LifecyclePolicyText": "{\"rules\":[{\"rulePriority\":1,\"description\":\"Expire untagged build layers only\",\"selection\":{\"tagStatus\":\"untagged\",\"countType\":\"sinceImagePushed\",\"countUnit\":\"days\",\"countNumber\":7},\"action\":{\"type\":\"expire\"}}]}"
+        },
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": "Operix"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "WebRepository": {
+      "Type": "AWS::ECR::Repository",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "RepositoryName": "operix-web",
+        "ImageTagMutability": "IMMUTABLE",
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true
+        },
+        "EncryptionConfiguration": {
+          "EncryptionType": "AES256"
+        },
+        "LifecyclePolicy": {
+          "LifecyclePolicyText": "{\"rules\":[{\"rulePriority\":1,\"description\":\"Expire untagged build layers only\",\"selection\":{\"tagStatus\":\"untagged\",\"countType\":\"sinceImagePushed\",\"countUnit\":\"days\",\"countNumber\":7},\"action\":{\"type\":\"expire\"}}]}"
+        },
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": "Operix"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "ArtifactsBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        }
+      }
+    },
+    "ArtifactsBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ArtifactsBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ArtifactsBucket",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "ArtifactsBucket",
+                          "Arn"
+                        ]
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "BackupsBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        }
+      }
+    },
+    "BackupsBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "BackupsBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "BackupsBucket",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "BackupsBucket",
+                          "Arn"
+                        ]
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ImagesRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Ref": "GitHubOidcProviderArn"
+                }
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": "repo:Kienda@62873841/Operix@1423912038:environment:operix-images"
+                }
+              }
+            }
+          ]
+        },
+        "MaxSessionDuration": 3600,
+        "Policies": [
+          {
+            "PolicyName": "OperixImagesOnly",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "ecr:GetAuthorizationToken",
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:GetDownloadUrlForLayer",
+                    "ecr:BatchGetImage",
+                    "ecr:InitiateLayerUpload",
+                    "ecr:UploadLayerPart",
+                    "ecr:CompleteLayerUpload",
+                    "ecr:PutImage"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "ApiRepository",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "WorkerRepository",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "MigrateRepository",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "WebRepository",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:PutObject"
+                  ],
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        {
+                          "Fn::GetAtt": [
+                            "ArtifactsBucket",
+                            "Arn"
+                          ]
+                        },
+                        "/operix/releases/*"
+                      ]
+                    ]
+                  },
+                  "Condition": {
+                    "StringEquals": {
+                      "s3:x-amz-server-side-encryption": "AES256"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "DeployRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Ref": "GitHubOidcProviderArn"
+                }
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": "repo:Kienda@62873841/Operix@1423912038:environment:operix-staging"
+                }
+              }
+            }
+          ]
+        },
+        "MaxSessionDuration": 3600,
+        "Policies": [
+          {
+            "PolicyName": "OperixFixedSsmDocumentOnly",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "ssm:SendCommand",
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:ec2:us-east-1:${AWS::AccountId}:instance/${OperixInstanceId}"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:ssm:us-east-1:${AWS::AccountId}:document/Operix-Staging-Release"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "ssm:GetCommandInvocation",
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ReleaseDocument": {
+      "Type": "AWS::SSM::Document",
+      "Properties": {
+        "Name": "Operix-Staging-Release",
+        "DocumentType": "Command",
+        "DocumentFormat": "JSON",
+        "Content": {
+          "schemaVersion": "2.2",
+          "description": "Restricted Operix staging release only; no arbitrary shell parameter",
+          "parameters": {
+            "ReleaseId": {
+              "type": "String",
+              "allowedPattern": "^[0-9a-f]{40}-[0-9]+-[0-9]+$",
+              "interpolationType": "ENV_VAR"
+            },
+            "Checksum": {
+              "type": "String",
+              "allowedPattern": "^[0-9a-f]{64}$",
+              "interpolationType": "ENV_VAR"
+            },
+            "Mode": {
+              "type": "String",
+              "allowedValues": [
+                "deploy",
+                "rollback"
+              ],
+              "interpolationType": "ENV_VAR"
+            }
+          },
+          "mainSteps": [
+            {
+              "action": "aws:runShellScript",
+              "name": "releaseOperixStaging",
+              "precondition": {
+                "StringEquals": [
+                  "platformType",
+                  "Linux"
+                ]
+              },
+              "inputs": {
+                "timeoutSeconds": "1500",
+                "runCommand": [
+                  "set -eu",
+                  "test -n \"${SSM_ReleaseId:-}\" && test -n \"${SSM_Checksum:-}\" && test -n \"${SSM_Mode:-}\"",
+                  "/usr/local/libexec/operix-receive-release \"$SSM_ReleaseId\" \"$SSM_Checksum\" \"$SSM_Mode\""
+                ]
+              }
+            }
+          ]
+        },
+        "UpdateMethod": "NewVersion"
+      }
+    },
+    "InstanceOperixPolicy": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "Description": "Additive Operix-only access; requires approval before attaching to shared EC2 role",
+        "Roles": [
+          {
+            "Ref": "InstanceRoleName"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "ecr:GetAuthorizationToken",
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage"
+              ],
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ApiRepository",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::GetAtt": [
+                    "WorkerRepository",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::GetAtt": [
+                    "MigrateRepository",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::GetAtt": [
+                    "WebRepository",
+                    "Arn"
+                  ]
+                }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject"
+              ],
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "ArtifactsBucket",
+                        "Arn"
+                      ]
+                    },
+                    "/operix/releases/*"
+                  ]
+                ]
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject"
+              ],
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "BackupsBucket",
+                        "Arn"
+                      ]
+                    },
+                    "/operix-staging/*"
+                  ]
+                ]
+              },
+              "Condition": {
+                "StringEquals": {
+                  "s3:x-amz-server-side-encryption": "AES256"
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "secretsmanager:GetSecretValue"
+              ],
+              "Resource": {
+                "Ref": "RuntimeSecretArn"
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "kms:Decrypt"
+              ],
+              "Resource": {
+                "Ref": "SecretKmsKeyArn"
+              },
+              "Condition": {
+                "StringEquals": {
+                  "kms:ViaService": "secretsmanager.us-east-1.amazonaws.com"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ArtifactsBucket": {
+      "Value": {
+        "Ref": "ArtifactsBucket"
+      }
+    },
+    "BackupsBucket": {
+      "Value": {
+        "Ref": "BackupsBucket"
+      }
+    },
+    "ImagesRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "ImagesRole",
+          "Arn"
+        ]
+      }
+    },
+    "DeployRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "DeployRole",
+          "Arn"
+        ]
+      }
+    },
+    "Registry": {
+      "Value": {
+        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.us-east-1.amazonaws.com"
+      }
+    }
+  }
+}

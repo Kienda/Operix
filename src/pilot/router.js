@@ -28,11 +28,16 @@ export function useRoute() {
   return route;
 }
 
-/** Converts a legacy `?invite=` link (sent by earlier builds) into the pilot route. */
+/**
+ * Converts links from earlier builds into pilot routes: a `?invite=` link, and
+ * the old path-based `/login` page (bookmarks), which becomes `#/login`.
+ */
 export function migrateLegacyLinks() {
   const params = new URLSearchParams(window.location.search);
   const invite = params.get('invite');
   if (invite) {
     window.history.replaceState(null, '', `${window.location.pathname}#/accept-invite?token=${encodeURIComponent(invite)}`);
+  } else if (window.location.pathname.replace(/\/+$/, '') === '/login' && !window.location.hash) {
+    window.history.replaceState(null, '', '/#/login');
   }
 }

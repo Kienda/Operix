@@ -44,6 +44,69 @@ async function signIn(page, who) {
   }
 }
 
+test('public landing leads to sign-in; no public registration exists', async ({ browser }) => {
+  const page = await open(browser, 'visitor', { width: 1440, height: 900 });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/Manage everything\.\s*Grow everywhere\./);
+  await expect(page.getByText('Invitation-only accounts')).toBeVisible();
+  await expect(page.getByText('Demo data', { exact: true })).toBeVisible();
+  await page.screenshot({ path: 'e2e/evidence/00a-landing-desktop.png', fullPage: true });
+
+  const noRegistration = async () => {
+    for (const name of [/sign ?up/i, /register/i, /create (an )?account/i, /get started/i, /google|microsoft/i])
+      await expect(page.getByRole('link', { name }).or(page.getByRole('button', { name }))).toHaveCount(0);
+  };
+  await noRegistration();
+
+  // "Explore modules" stays on the landing page (the hash is the router) and moves focus.
+  await page.getByRole('button', { name: 'Explore modules' }).click();
+  await expect(page.locator('#px-lp-modules')).toBeFocused();
+  await expect(page).toHaveURL(/\/(#\/)?$/);
+
+  // Keyboard: the header Login action is reachable with Tab and activates with Enter.
+  await page.goto('/');
+  let reached = false;
+  for (let i = 0; i < 8 && !reached; i++) {
+    await page.keyboard.press('Tab');
+    reached = await page.evaluate(() => document.activeElement?.textContent?.trim() === 'Login');
+  }
+  expect(reached).toBe(true);
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Sign in to Operix' })).toBeVisible();
+  await expect(page).toHaveURL(/#\/login$/);
+  await noRegistration();
+  await page.screenshot({ path: 'e2e/evidence/00b-login-desktop.png', fullPage: true });
+
+  await page.getByRole('link', { name: 'Forgot your password?' }).click();
+  await expect(page.getByRole('heading', { name: 'Reset your password' })).toBeVisible();
+  await page.getByRole('link', { name: 'Back to sign in' }).click();
+  await expect(page.getByRole('heading', { name: 'Sign in to Operix' })).toBeVisible();
+  await page.getByRole('link', { name: 'Home' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/Manage everything/);
+
+  // Bookmarks of the earlier path-based login page still land on sign-in.
+  await page.goto('/login');
+  await expect(page).toHaveURL(/\/#\/login$/);
+  await expect(page.getByRole('heading', { name: 'Sign in to Operix' })).toBeVisible();
+  // Signed-out deep links ask to sign in rather than showing the landing page.
+  await page.goto('/#/customers');
+  await expect(page.getByRole('heading', { name: 'Sign in to Operix' })).toBeVisible();
+
+  for (const width of [1440, 1024, 768, 390, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of ['/', '/#/login']) {
+      await page.goto(route);
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(scrollWidth, `${route} at ${width}px`).toBeLessThanOrEqual(width);
+    }
+  }
+  await page.goto('/');
+  await page.screenshot({ path: 'e2e/evidence/00c-landing-mobile.png', fullPage: true });
+  await page.goto('/#/login');
+  await page.screenshot({ path: 'e2e/evidence/00d-login-mobile.png' });
+});
+
 test('owner activates from the emailed link and must enroll MFA before using Operix', async ({ browser }) => {
   const page = await open(browser, 'owner');
   await acceptInvite(page, 'owner', 'Mariama');
@@ -223,7 +286,7 @@ test('dialogs trap focus and close with Escape; French is available', async () =
 
 test('phone layout: navigation drawer and readable task cards', async ({ browser }) => {
   const page = await open(browser, 'employee-mobile', { width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/#/login');
   await signIn(page, 'employee');
   await expect(page.getByRole('heading', { name: 'Welcome, Ibrahima' })).toBeVisible();
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);

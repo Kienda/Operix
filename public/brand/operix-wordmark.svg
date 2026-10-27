@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 546 100" role="img" aria-label="Operix">
+  <g fill="#0D9488">
+    <path fill-rule="evenodd" d="M0 50a56 50 0 1 0 112 0a56 50 0 1 0-112 0ZM24 50a32 26 0 1 0 64 0a32 26 0 1 0-64 0Z"/>
+    <rect x="124" width="24" height="100"/>
+    <rect x="220" width="24" height="100"/><rect x="220" width="68" height="24"/>
+    <rect x="220" y="38" width="62" height="24"/><rect x="220" y="76" width="68" height="24"/>
+    <rect x="302" width="24" height="100"/><path d="M336 64h28l26 36h-28Z"/>
+    <rect x="404" width="24" height="100"/>
+    <path d="M442 0h32l72 100h-32Z"/><path d="M442 100h32l44.64-62h-32Z"/>
+  </g>
+  <g fill="none" stroke="#0D9488" stroke-width="24">
+    <path d="M136 12h32a26 26 0 0 1 0 52h-32"/><path d="M314 12h32a26 26 0 0 1 0 52h-32"/>
+  </g>
+  <path fill="#F4B942" d="M490.24 33h32l23.76-33h-32Z"/>
+</svg>

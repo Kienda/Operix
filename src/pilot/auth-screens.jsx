@@ -1,20 +1,12 @@
 import React, { useState } from 'react';
-import { ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
 import { auth, session } from './api.js';
 import { navigate } from './router.js';
 import { t, LANGUAGES, getLanguage, setLanguage } from './i18n.js';
 import { Field, FormError, Notice } from './ui.jsx';
+import { Brand, LogoMark } from './brand.jsx';
 
-export function Brand({ light = false }) {
-  return (
-    <div className={`px-brand ${light ? 'px-brand-light' : ''}`}>
-      <span className="px-logo" aria-hidden="true">
-        <i />
-      </span>
-      <b>Operix</b>
-    </div>
-  );
-}
+export { Brand };
 
 export function LanguageSwitch() {
   return (
@@ -34,21 +26,16 @@ export function LanguageSwitch() {
 function AuthLayout({ title, subtitle, children }) {
   return (
     <div className="px-auth">
-      <aside className="px-auth-aside">
-        <Brand light />
-        <div>
-          <p className="px-eyebrow">{t('auth.asideEyebrow')}</p>
-          <h2>{t('auth.asideTitle')}</h2>
-          <p>{t('auth.asideBody')}</p>
-        </div>
-        <small>© {new Date().getFullYear()} Global High Tech</small>
-      </aside>
+      <header className="px-auth-top">
+        <a className="px-auth-home" href="#/">
+          <ArrowLeft aria-hidden="true" /> {t('auth.home')}
+        </a>
+        <LanguageSwitch />
+      </header>
       <main className="px-auth-main">
-        <div className="px-auth-top">
-          <div className="px-auth-mobile-brand">
-            <Brand />
-          </div>
-          <LanguageSwitch />
+        <div className="px-auth-brand">
+          <LogoMark />
+          <Brand light subtitle />
         </div>
         <div className="px-auth-card">
           <h1>{title}</h1>
@@ -56,6 +43,7 @@ function AuthLayout({ title, subtitle, children }) {
           {children}
         </div>
       </main>
+      <footer className="px-auth-foot">© {new Date().getFullYear()} Global High Tech</footer>
     </div>
   );
 }
@@ -181,7 +169,7 @@ export function ForgotPassword() {
           </button>
         </form>
       )}
-      <a className="px-link" href="#/">
+      <a className="px-link" href="#/login">
         {t('auth.backToSignIn')}
       </a>
     </AuthLayout>
@@ -214,7 +202,7 @@ export function ResetPassword({ token }) {
     setError('');
     try {
       await auth.reset(token, password);
-      navigate('/?notice=reset', { replace: true });
+      navigate('/login?notice=reset', { replace: true });
     } catch (err) {
       setError(err.status === 401 ? t('auth.linkInvalid') : err.message);
       setBusy(false);
@@ -252,7 +240,7 @@ export function AcceptInvite({ token }) {
         lastName: form.lastName.trim() || '-',
         password: form.password,
       });
-      navigate('/?notice=invited', { replace: true });
+      navigate('/login?notice=invited', { replace: true });
     } catch (err) {
       if (err.code === 'EXISTING_ACCOUNT_PASSWORD_REQUIRED') {
         setExisting(true);
