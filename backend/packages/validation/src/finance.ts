@@ -8,6 +8,7 @@ import {
   quantity,
   shortText,
   uuid,
+  patchSchema,
 } from './common';
 
 export const invoiceItemSchema = z.object({
@@ -40,7 +41,7 @@ export const invoiceSchema = z.object({
   notes: longText.optional(),
   purchaseOrderReference: shortText.nullish(),
 });
-export const updateInvoiceSchema = invoiceSchema.partial().omit({ customerId: true });
+export const updateInvoiceSchema = patchSchema(invoiceSchema).omit({ customerId: true });
 
 export const PAYMENT_METHODS = [
   'cash',
@@ -167,7 +168,7 @@ export const expenseSchema = z.object({
   taxDeductible: z.boolean().default(true),
   notes: mediumText.optional(),
 });
-export const updateExpenseSchema = expenseSchema.partial();
+export const updateExpenseSchema = patchSchema(expenseSchema);
 
 export const expenseDecisionSchema = z.object({
   approved: z.boolean(),

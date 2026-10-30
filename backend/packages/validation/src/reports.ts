@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { currencyCode, shortText, uuid } from './common';
+import { currencyCode, shortText, uuid, patchSchema } from './common';
 
 export const REPORT_KEYS = [
   // sales
@@ -91,7 +91,7 @@ export const reportExportSchema = reportQuerySchema.extend({
 export const savedReportSchema = z.object({
   name: shortText,
   reportKey: z.enum(REPORT_KEYS),
-  filters: reportQuerySchema.partial(),
+  filters: patchSchema(reportQuerySchema),
   isShared: z.boolean().default(false),
   scheduleCron: z
     .string()

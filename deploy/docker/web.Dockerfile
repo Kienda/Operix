@@ -4,6 +4,7 @@ WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY index.html ./
+COPY public/ ./public/
 COPY src/ ./src/
 ENV VITE_API_URL=/api/v1 VITE_OPERIX_EXPERIENCE=pilot
 RUN npm run build

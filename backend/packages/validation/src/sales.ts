@@ -10,6 +10,7 @@ import {
   shortText,
   tagsSchema,
   uuid,
+  patchSchema,
 } from './common';
 
 export const serviceCategorySchema = z.object({
@@ -58,7 +59,7 @@ export const serviceSchema = z.object({
   isActive: z.boolean().default(true),
   tags: tagsSchema,
 });
-export const updateServiceSchema = serviceSchema.partial();
+export const updateServiceSchema = patchSchema(serviceSchema);
 
 /**
  * A quotation line may reference a catalog service, an inventory item, or be
@@ -113,7 +114,7 @@ export const quotationSchema = z.object({
   internalNotes: longText.optional(),
   tags: tagsSchema,
 });
-export const updateQuotationSchema = quotationSchema.partial().omit({ customerId: true });
+export const updateQuotationSchema = patchSchema(quotationSchema).omit({ customerId: true });
 
 export const sendQuotationSchema = z.object({
   channels: z

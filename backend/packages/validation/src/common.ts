@@ -124,7 +124,32 @@ export const overrideReasonSchema = z.object({
 
 export const tagsSchema = z.array(z.string().trim().min(1).max(48)).max(30).default([]);
 
-export const metadataSchema = z.record(z.unknown()).default({});
+export const metadataSchema = z.record(z.string(), z.unknown()).default({});
+
+type Patch<S extends z.ZodRawShape> = {
+  [K in keyof S]: z.ZodOptional<
+    S[K] extends z.ZodDefault<infer I> ? I : S[K] extends z.ZodPrefault<infer P> ? P : S[K]
+  >;
+};
+
+/**
+ * Update (PATCH) schema: every field optional and never filled from defaults.
+ * Zod 4's .partial() still applies .default() values, which would silently
+ * reset omitted fields on update.
+ */
+export function patchSchema<S extends z.ZodRawShape>(schema: z.ZodObject<S>) {
+  const shape = Object.fromEntries(
+    Object.entries(schema.shape).map(([key, field]) => [
+      key,
+      (
+        (field instanceof z.ZodDefault || field instanceof z.ZodPrefault
+          ? field.unwrap()
+          : field) as z.ZodType
+      ).optional(),
+    ]),
+  );
+  return schema.extend(shape) as unknown as z.ZodObject<Patch<S>>;
+}
 
 /** Idempotency key supplied by the mobile app when replaying an offline queue. */
 export const syncKey = z.string().trim().min(8).max(128);

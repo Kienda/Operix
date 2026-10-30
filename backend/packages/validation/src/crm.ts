@@ -11,6 +11,7 @@ import {
   shortText,
   tagsSchema,
   uuid,
+  patchSchema,
 } from './common';
 
 export const customerSchema = z.object({
@@ -36,7 +37,7 @@ export const customerSchema = z.object({
   tags: tagsSchema,
   status: z.enum(['active', 'inactive', 'archived']).default('active'),
 });
-export const updateCustomerSchema = customerSchema.partial();
+export const updateCustomerSchema = patchSchema(customerSchema);
 
 export const customerContactSchema = z.object({
   firstName: shortText,
@@ -108,7 +109,7 @@ export const leadSchema = z.object({
   notes: longText.optional(),
   tags: tagsSchema,
 });
-export const updateLeadSchema = leadSchema.partial();
+export const updateLeadSchema = patchSchema(leadSchema);
 
 export const leadStageChangeSchema = z.object({
   stage: z.enum(LEAD_STAGES),
@@ -126,7 +127,7 @@ export const leadAssignSchema = z.object({
 export const convertLeadSchema = z.object({
   createCustomer: z.boolean().default(true),
   existingCustomerId: uuid.nullish(),
-  customer: customerSchema.partial().optional(),
+  customer: patchSchema(customerSchema).optional(),
   createQuotation: z.boolean().default(false),
 });
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { longText, mediumText, shortText, uuid } from './common';
+import { longText, mediumText, shortText, uuid, patchSchema } from './common';
 
 /**
  * Geofences are either a circle (centre + radius) or a polygon. Both are
@@ -83,7 +83,7 @@ export const patrolRouteSchema = z.object({
     .min(1)
     .max(200),
 });
-export const updatePatrolRouteSchema = patrolRouteSchema.partial();
+export const updatePatrolRouteSchema = patchSchema(patrolRouteSchema);
 
 export const startPatrolSchema = z.object({
   routeId: uuid,
@@ -220,7 +220,7 @@ export const offlineBatchSchema = z.object({
           'waste.report',
         ]),
         capturedAt: z.coerce.date(),
-        payload: z.record(z.unknown()),
+        payload: z.record(z.string(), z.unknown()),
       }),
     )
     .min(1)

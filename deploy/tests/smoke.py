@@ -75,6 +75,11 @@ with tempfile.TemporaryDirectory(prefix="operix-smoke-") as directory:
         with urllib.request.urlopen("http://127.0.0.1:18081/", timeout=10) as response:
             for header in ["Content-Security-Policy", "Strict-Transport-Security", "X-Frame-Options", "X-Content-Type-Options"]:
                 assert response.headers.get(header), f"Missing security header {header}"
+        # Brand assets come from public/; the SPA fallback would otherwise answer 200 with index.html.
+        for path, kind in [("/favicon.svg", "image/svg+xml"), ("/favicon-32.png", "image/png"),
+                           ("/apple-touch-icon.png", "image/png"), ("/brand/operix-icon-192.png", "image/png")]:
+            with urllib.request.urlopen("http://127.0.0.1:18081" + path, timeout=10) as response:
+                assert response.headers.get_content_type() == kind, f"{path} served as {response.headers.get_content_type()}"
         # The production bootstrap runs under the least-privilege role; a dry run writes nothing.
         result = compose("exec", "-T", "api", "node", "--require", "/opt/operix/runtime-env.cjs", "dist/cli/bootstrap-pilot.js",
                          "--owner-email", "owner@operix.test", "--dry-run", capture=True)

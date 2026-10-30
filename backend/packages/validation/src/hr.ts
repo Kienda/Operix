@@ -10,6 +10,7 @@ import {
   quantity,
   shortText,
   uuid,
+  patchSchema,
 } from './common';
 
 export const departmentSchema = z.object({
@@ -80,14 +81,14 @@ export const employeeSchema = z.object({
   taxIdentifier: z.string().trim().max(64).nullish(),
   socialSecurityNumber: z.string().trim().max(64).nullish(),
   /** Free-form so no country's tax rules are hard-coded into the platform. */
-  payrollProfile: z.record(z.unknown()).default({}),
+  payrollProfile: z.record(z.string(), z.unknown()).default({}),
   status: z.enum(['active', 'on_leave', 'suspended', 'terminated']).default('active'),
   notes: longText.optional(),
   /** Creating a login for this employee is optional. */
   createUserAccount: z.boolean().default(false),
   roleIds: z.array(uuid).max(20).default([]),
 });
-export const updateEmployeeSchema = employeeSchema.partial().omit({ createUserAccount: true });
+export const updateEmployeeSchema = patchSchema(employeeSchema).omit({ createUserAccount: true });
 
 export const offboardEmployeeSchema = z.object({
   terminationDate: z.coerce.date(),
