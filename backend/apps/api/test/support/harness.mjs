@@ -93,7 +93,7 @@ export async function startStack({ env = {}, prefix = 'pilot_test' } = {}) {
     await admin.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
     await admin.$disconnect();
   }
-  return { db, base, cli, stop, output: () => output };
+  return { db, base, cli, stop, schema, output: () => output };
 }
 
 export function client(base) {

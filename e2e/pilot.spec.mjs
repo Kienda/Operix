@@ -1,5 +1,5 @@
 // Real-browser walkthrough of the GHT pilot workflow: owner activation with
-// MFA → invitations → Guinea sales quotation → acceptance → project → task →
+// MFA â†’ invitations â†’ Guinea sales quotation â†’ acceptance â†’ project â†’ task â†’
 // employee progress, plus denied-access and responsive/accessibility checks.
 import { test, expect } from '@playwright/test';
 import { emailLink, state, totp, watchPage } from './support.mjs';
@@ -58,10 +58,10 @@ test('public landing leads to sign-in; no public registration exists', async ({ 
   };
   await noRegistration();
 
-  // "Explore modules" stays on the landing page (the hash is the router) and moves focus.
+  // "Explore modules" stays on the landing page and moves focus.
   await page.getByRole('button', { name: 'Explore modules' }).click();
   await expect(page.locator('#px-lp-modules')).toBeFocused();
-  await expect(page).toHaveURL(/\/(#\/)?$/);
+  await expect(page).toHaveURL(/\/$/);
 
   // Keyboard: the header Login action is reachable with Tab and activates with Enter.
   await page.goto('/');
@@ -73,7 +73,7 @@ test('public landing leads to sign-in; no public registration exists', async ({ 
   expect(reached).toBe(true);
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: 'Sign in to Operix' })).toBeVisible();
-  await expect(page).toHaveURL(/#\/login$/);
+  await expect(page).toHaveURL(/\/login$/);
   await noRegistration();
   await page.screenshot({ path: 'e2e/evidence/00b-login-desktop.png', fullPage: true });
 
@@ -84,17 +84,16 @@ test('public landing leads to sign-in; no public registration exists', async ({ 
   await page.getByRole('link', { name: 'Home' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/Manage everything/);
 
-  // Bookmarks of the earlier path-based login page still land on sign-in.
-  await page.goto('/login');
-  await expect(page).toHaveURL(/\/#\/login$/);
+  // Hash links from earlier builds still land on sign-in.
+  await page.goto('/#/login');
   await expect(page.getByRole('heading', { name: 'Sign in to Operix' })).toBeVisible();
   // Signed-out deep links ask to sign in rather than showing the landing page.
-  await page.goto('/#/customers');
+  await page.goto('/customers');
   await expect(page.getByRole('heading', { name: 'Sign in to Operix' })).toBeVisible();
 
   for (const width of [1440, 1024, 768, 390, 375]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const route of ['/', '/#/login']) {
+    for (const route of ['/', '/login']) {
       await page.goto(route);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -103,7 +102,7 @@ test('public landing leads to sign-in; no public registration exists', async ({ 
   }
   await page.goto('/');
   await page.screenshot({ path: 'e2e/evidence/00c-landing-mobile.png', fullPage: true });
-  await page.goto('/#/login');
+  await page.goto('/login');
   await page.screenshot({ path: 'e2e/evidence/00d-login-mobile.png' });
 });
 
@@ -169,14 +168,14 @@ test('Guinea sales rep creates a customer and a GNF quotation with server-comput
   await expect(dialog.getByLabel('Tax / registration number')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('heading', { name: 'Kaloum Printing SARL' })).toBeVisible();
-  await expect(page.getByText('CUS-00001 · GHT Guinea')).toBeVisible();
+  await expect(page.getByText('CUS-00001 Â· GHT Guinea')).toBeVisible();
   await expect(page.getByRole('status').getByText('Customer CUS-00001 created.')).toBeVisible();
 
   await page.getByRole('link', { name: 'New quotation' }).click();
   await page.getByLabel('Title').fill('Storefront signage');
   await expect(page.getByLabel('Currency')).toHaveValue('GNF');
   await page.getByLabel('Tax rate (%)').fill('18');
-  await page.getByLabel('Description').first().fill('Vinyl banner 3m × 1m');
+  await page.getByLabel('Description').first().fill('Vinyl banner 3m Ã— 1m');
   await page.getByLabel('Quantity').first().fill('3');
   await page.getByLabel(/Unit price/).first().fill('150000');
   await page.getByRole('button', { name: 'Add line' }).click();
@@ -186,13 +185,13 @@ test('Guinea sales rep creates a customer and a GNF quotation with server-comput
   await expect(page.locator('.px-totals .px-total')).toHaveText('534,540 GNF');
   await page.screenshot({ path: 'e2e/evidence/03-quotation-editor.png', fullPage: true });
   await page.getByRole('button', { name: 'Save draft' }).click();
-  await expect(page.getByRole('heading', { name: /QUO-\d{4}-0001 · Storefront signage/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /QUO-\d{4}-0001 Â· Storefront signage/ })).toBeVisible();
   await expect(page.locator('.px-totals .px-total')).toHaveText('534,540 GNF');
   // A sales rep can send but not record the customer decision.
   await expect(page.getByRole('button', { name: 'Record acceptance' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Mark as sent' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Mark as sent' }).click();
-  await expect(page.getByText('Sent — awaiting decision')).toBeVisible();
+  await expect(page.getByText('Sent â€” awaiting decision')).toBeVisible();
   await page.screenshot({ path: 'e2e/evidence/04-quotation-sent.png', fullPage: true });
   await expect(page.getByRole('link', { name: 'Edit' })).toHaveCount(0);
 });
@@ -212,7 +211,7 @@ test('owner records acceptance, opens the project from the quotation and assigns
   await expect(page.getByLabel('Accepted quotation')).not.toHaveValue('');
   await page.getByLabel('Service').fill('Printing & installation');
   await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('heading', { name: /PRJ-\d{4}-0001 · Kaloum storefront signage/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /PRJ-\d{4}-0001 Â· Kaloum storefront signage/ })).toBeVisible();
 
   await page.getByRole('button', { name: 'Start project' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Start project' }).click();
@@ -221,7 +220,7 @@ test('owner records acceptance, opens the project from the quotation and assigns
   // The invited employee has not activated yet, so they cannot be assigned work.
   await page.getByRole('button', { name: 'New task' }).click();
   const task = page.getByRole('dialog', { name: 'New task' });
-  await expect(task.getByLabel('Assigned to').locator('option', { hasText: '— Employee' })).toHaveCount(0);
+  await expect(task.getByLabel('Assigned to').locator('option', { hasText: 'â€” Employee' })).toHaveCount(0);
   await task.getByRole('button', { name: 'Cancel' }).click();
 });
 
@@ -236,7 +235,7 @@ test('employee activates and only sees their own task, which they can progress',
   await owner.getByRole('button', { name: 'New task' }).click();
   const task = owner.getByRole('dialog', { name: 'New task' });
   await task.getByLabel('Name').fill('Print the banners');
-  await task.getByLabel('Assigned to').selectOption({ label: 'Ibrahima Pilot — Employee' });
+  await task.getByLabel('Assigned to').selectOption({ label: 'Ibrahima Pilot â€” Employee' });
   await task.getByLabel('Priority').selectOption('high');
   await task.getByRole('button', { name: 'Save' }).click();
   await expect(owner.locator('.px-list b', { hasText: 'Print the banners' })).toBeVisible();
@@ -244,7 +243,7 @@ test('employee activates and only sees their own task, which they can progress',
 
   const menu = nav(page);
   await expect(menu.getByRole('link')).toHaveText(['Dashboard', 'Tasks', 'My account']);
-  await page.goto('/#/customers');
+  await page.goto('/customers');
   await expect(page.getByText('This page does not exist or is not available to you.')).toBeVisible();
 
   await nav(page).getByRole('link', { name: 'Tasks', exact: true }).click();
@@ -252,7 +251,7 @@ test('employee activates and only sees their own task, which they can progress',
   await expect(row).toBeVisible();
   await page.screenshot({ path: 'e2e/evidence/06-employee-tasks.png', fullPage: true });
   await row.getByRole('combobox').selectOption('IN_PROGRESS');
-  await expect(page.getByText('“Print the banners” updated.')).toBeVisible();
+  await expect(page.getByText('â€œPrint the bannersâ€ updated.')).toBeVisible();
   await row.getByRole('combobox').selectOption('COMPLETED');
   await expect(page.getByText('No tasks are assigned to you.')).toBeVisible();
   // Cancelling is a planner decision, not offered to the assignee.
@@ -260,11 +259,11 @@ test('employee activates and only sees their own task, which they can progress',
   await expect(page.getByRole('row', { name: /Print the banners/ }).getByRole('combobox').locator('option')).toHaveText(['To do', 'In progress', 'Done']);
 });
 
-test('sales rep cannot reach team management or other people’s records', async () => {
+test('sales rep cannot reach team management or other peopleâ€™s records', async () => {
   const page = pages.sales;
-  await page.goto('/#/team');
+  await page.goto('/team');
   await expect(page.getByText('This page does not exist or is not available to you.')).toBeVisible();
-  await page.goto('/#/projects');
+  await page.goto('/projects');
   await expect(page.getByText('This page does not exist or is not available to you.')).toBeVisible();
 });
 
@@ -286,7 +285,7 @@ test('dialogs trap focus and close with Escape; French is available', async () =
 
 test('phone layout: navigation drawer and readable task cards', async ({ browser }) => {
   const page = await open(browser, 'employee-mobile', { width: 390, height: 844 });
-  await page.goto('/#/login');
+  await page.goto('/login');
   await signIn(page, 'employee');
   await expect(page.getByRole('heading', { name: 'Welcome, Ibrahima' })).toBeVisible();
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);

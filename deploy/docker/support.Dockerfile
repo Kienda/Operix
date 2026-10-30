@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 # Verified internal supporting images. Publication and host deployment need separate approval.
 ARG SOURCE_DATE_EPOCH=1792485048
-FROM --platform=$BUILDPLATFORM golang:1.27.3-bookworm@sha256:5c3e9b43cfd3bb95c7937462e29d87ada57b481a96fa23ad0eb61778d7a00110 AS gosu-builder
+FROM --platform=$BUILDPLATFORM golang:1.27.3-bookworm@sha256:972b4110ba0f47539a975c31e52c64765e1ff19f2d74469ae4a595c6676e80a5 AS gosu-builder
 ENV GOTOOLCHAIN=local CGO_ENABLED=0 GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org
 WORKDIR /src
 ADD --checksum=sha256:33d7537d588ea49458b9509bcf4554bdf5ceacc66da71e5caa1058ea3b689c3b https://codeload.github.com/tianon/gosu/tar.gz/6456aaa0f3c854d199d0f037f068eb97515b7513 /source.tar.gz
@@ -20,7 +20,7 @@ RUN test "$TARGETOS" = linux && case "$TARGETARCH" in amd64|arm64) ;; *) exit 1;
     && grep -q 'go1.27.3' /out/build-info.txt \
     && cmp go.mod /locks/go.mod && cmp go.sum /locks/go.sum
 
-FROM postgres:16.15-alpine3.24@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea AS postgres-candidate
+FROM postgres:18.6-alpine3.24@sha256:898c60cb390d1085bc97bdd6a1ae968757421df394b071848b52b1c09c89d6a5 AS postgres-candidate
 COPY --from=gosu-builder --chmod=0755 /out/gosu /usr/local/bin/gosu
 COPY --from=gosu-builder /out/build-info.txt /usr/local/share/operix/gosu-build-info.txt
 # Preserve Alpine's upstream UID/GID (70). GID 999 belongs to ping on this base;
@@ -39,7 +39,7 @@ ADD --checksum=sha256:00e674d00a80c9808580546dd388093c1c67f21628a9d70e27628bddc8
 ADD --checksum=sha256:2303cca13dc8bba5798744a68abd07530abb35ab339d9cc4640fc53276049af0 https://dl-cdn.alpinelinux.org/alpine/v3.21/main/aarch64/libcrypto3-3.3.7-r2.apk /arm64/libcrypto3.apk
 ADD --checksum=sha256:d494a0a211dd78a8055c24885fc06375eabb79c82ae797f7f694cefbf3653b79 https://dl-cdn.alpinelinux.org/alpine/v3.21/main/aarch64/libssl3-3.3.7-r2.apk /arm64/libssl3.apk
 
-FROM redis:7.4.11-alpine3.21@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499 AS redis-candidate
+FROM redis:8.0.6-alpine3.21@sha256:5f61955be8ab2ccee9372b84ae4d4da2e2b156f87281e3f218544055e7ee04d4 AS redis-candidate
 ARG TARGETARCH
 # Local APKs are checksum-pinned above AND verified against the base's Alpine keys.
 # No --allow-untrusted, repository rewrite, general upgrade, or other package changes.

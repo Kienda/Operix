@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import {
   BriefcaseBusiness,
   FileText,
@@ -31,7 +31,7 @@ migrateLegacyLinks();
 export const can = (s, ...permissions) => permissions.some((p) => s?.permissions?.includes(p));
 
 const NAV = [
-  { path: '/', label: 'nav.dashboard', icon: LayoutDashboard },
+  { path: '/dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
   { path: '/customers', label: 'nav.customers', icon: Users, permission: 'customers.view' },
   { path: '/quotations', label: 'nav.quotations', icon: FileText, permission: 'quotations.view' },
   { path: '/projects', label: 'nav.projects', icon: BriefcaseBusiness, permission: 'projects.view' },
@@ -50,7 +50,9 @@ export default function PilotApp() {
   useEffect(() => onLanguage(() => setLanguageTick((n) => n + 1)), []);
   return (
     <ToastProvider>
-      <Router />
+      <Suspense fallback={<div className="px-boot" role="status">{t('common.loading')}</div>}>
+        <Router />
+      </Suspense>
     </ToastProvider>
   );
 }
@@ -82,19 +84,14 @@ function Router() {
   }, [current?.accessToken ? current.organization?.id + current.user?.id : null]);
 
   const [first] = route.segments;
-  const signedIn = Boolean(current?.accessToken);
-  // The sign-in page has nothing to offer a signed-in user.
-  useEffect(() => {
-    if (signedIn && first === 'login') navigate('/', { replace: true });
-  }, [signedIn, first]);
-
   if (first === 'accept-invite') return <AcceptInvite token={route.query.token} />;
   if (first === 'reset-password') return <ResetPassword token={route.query.token} />;
-  if (!signedIn) {
-    if (first === 'forgot-password') return <ForgotPassword />;
+  if (!current?.accessToken) {
     // Public landing only at the bare root; every other route (including deep
-    // links to app screens and older `/?notice=` redirects) asks to sign in.
-    if (!first && !route.query.notice) return <Landing />;
+    // links to app screens) asks to sign in.
+    if (!first) return <Landing />;
+    if (first === 'forgot-password') return <ForgotPassword />;
+    if (first !== 'login') return <LoginRedirect />;
     const notice = { reset: t('auth.resetDone'), invited: t('auth.inviteDone') }[route.query.notice];
     return <SignIn notice={notice} />;
   }
@@ -105,7 +102,18 @@ function Router() {
         <span>{t('common.verifyingSession')}</span>
       </div>
     );
+  if (first === 'login' || first === 'forgot-password') return <DashboardRedirect />;
   return <Shell session={current} route={route} />;
+}
+
+function LoginRedirect() {
+  useEffect(() => navigate('/login', { replace: true }), []);
+  return null;
+}
+
+function DashboardRedirect() {
+  useEffect(() => navigate('/dashboard', { replace: true }), []);
+  return null;
 }
 
 function Shell({ session, route }) {
@@ -130,7 +138,7 @@ function Shell({ session, route }) {
 
   let screen;
   if (mfaGate || first === 'account') screen = <Account session={session} required={mfaGate} onSignOut={signOut} />;
-  else if (!first) screen = <Dashboard session={session} />;
+  else if (first === 'dashboard') screen = <Dashboard session={session} />;
   else if (first === 'customers' && can(session, 'customers.view'))
     screen = second ? <CustomerDetail id={second} session={session} /> : <CustomerList session={session} query={route.query} />;
   else if (first === 'quotations' && can(session, 'quotations.view'))
@@ -161,7 +169,7 @@ function Shell({ session, route }) {
     screen = (
       <div className="px-state">
         <b>{t('common.notFound')}</b>
-        <a className="px-btn px-btn-secondary" href="#/">
+        <a className="px-btn px-btn-secondary" href="/dashboard">
           {t('nav.dashboard')}
         </a>
       </div>
@@ -188,15 +196,15 @@ function Shell({ session, route }) {
         <nav aria-label={t('nav.primary')}>
           {!mfaGate &&
             nav.map(({ path, label, icon: Icon }) => {
-              const active = path === '/' ? !first : `/${first}` === path;
+              const active = `/${first}` === path;
               return (
-                <a key={path} href={`#${path}`} className={active ? 'active' : ''} aria-current={active ? 'page' : undefined}>
+                <a key={path} href={path} className={active ? 'active' : ''} aria-current={active ? 'page' : undefined}>
                   <Icon aria-hidden="true" />
                   <span>{t(label)}</span>
                 </a>
               );
             })}
-          <a href="#/account" className={first === 'account' || mfaGate ? 'active' : ''} aria-current={first === 'account' ? 'page' : undefined}>
+          <a href="/account" className={first === 'account' || mfaGate ? 'active' : ''} aria-current={first === 'account' ? 'page' : undefined}>
             <Settings2 aria-hidden="true" />
             <span>{t('nav.account')}</span>
           </a>

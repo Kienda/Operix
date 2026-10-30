@@ -52,7 +52,7 @@ export default function Landing() {
       </a>
       <header className="px-lp-header">
         <div className="px-lp-wrap px-lp-header-row">
-          <a href="#/" className="px-lp-home" aria-label={t('landing.homeLabel')}>
+          <a href="/" className="px-lp-home" aria-label={t('landing.homeLabel')}>
             <Brand light subtitle />
           </a>
           <nav className="px-lp-nav" aria-label={t('landing.navLabel')}>
@@ -65,7 +65,7 @@ export default function Landing() {
           </nav>
           <div className="px-lp-header-actions">
             <LanguageSwitch />
-            <a className="px-btn px-btn-outline-light" href="#/login">
+            <a className="px-btn px-btn-outline-light" href="/login">
               {t('landing.login')}
             </a>
           </div>
@@ -84,7 +84,7 @@ export default function Landing() {
               <span className="px-lp-rule" aria-hidden="true" />
               <p className="px-lp-lead">{t('landing.lead')}</p>
               <div className="px-lp-ctas">
-                <a className="px-btn px-btn-bright px-btn-lg" href="#/login">
+                <a className="px-btn px-btn-bright px-btn-lg" href="/login">
                   {t('landing.login')} <ArrowRight aria-hidden="true" />
                 </a>
                 <button type="button" className="px-btn px-btn-outline-light px-btn-lg" onClick={() => scrollToSection('px-lp-modules')}>
@@ -147,7 +147,7 @@ export default function Landing() {
                 <h2>{t('landing.cta.title')}</h2>
                 <p>{t('landing.cta.body')}</p>
               </div>
-              <a className="px-btn px-btn-bright px-btn-lg" href="#/login">
+              <a className="px-btn px-btn-bright px-btn-lg" href="/login">
                 {t('landing.login')} <ArrowRight aria-hidden="true" />
               </a>
             </div>

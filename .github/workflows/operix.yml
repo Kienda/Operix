@@ -36,7 +36,7 @@ jobs:
       TEST_SMTP_PORT: '11025'
       MAILPIT_URL: http://127.0.0.1:18025
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with: {node-version: '24'}
       - name: Install locked dependencies
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with: {node-version: '24'}
       - run: npm install --global pnpm@11.1.3
@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Build all release images on Linux
         run: |
           python3 deploy/scripts/release-images.py build
@@ -142,13 +142,13 @@ jobs:
       release: ${{ steps.package.outputs.release }}
       checksum: ${{ steps.package.outputs.checksum }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ vars.OPERIX_ECR_ROLE_ARN }}
           aws-region: us-east-1
           allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
-      - name: Build, scan and publish unique release tags
+      - name: Build, scan and publish application images with retained supporting digests
         env:
           ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
           OPERIX_SUPPORT_PUBLICATION_APPROVED: ${{ vars.OPERIX_SUPPORT_PUBLICATION_APPROVED }}
@@ -156,7 +156,7 @@ jobs:
           set -euo pipefail
           registry="$ACCOUNT.dkr.ecr.us-east-1.amazonaws.com"
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$registry"
-          python3 deploy/scripts/release-images.py publish
+          python3 deploy/scripts/release-images.py publish --retain-support
       - name: Package deployment configuration
         id: package
         env:
@@ -183,7 +183,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd
         with:
           role-to-assume: ${{ vars.OPERIX_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1

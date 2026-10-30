@@ -4,7 +4,7 @@
 # Temporary internal build: official 2026.10.2 source, only compress patched to 1.18.7.
 # See deploy/docker/cloudflared/provenance.json and docs/cloudflared-security-patch.md.
 ARG SOURCE_DATE_EPOCH=1792485048
-FROM --platform=$BUILDPLATFORM golang:1.27.3-bookworm@sha256:5c3e9b43cfd3bb95c7937462e29d87ada57b481a96fa23ad0eb61778d7a00110 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27.3-bookworm@sha256:972b4110ba0f47539a975c31e52c64765e1ff19f2d74469ae4a595c6676e80a5 AS builder
 ENV GOTOOLCHAIN=local CGO_ENABLED=0 GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org
 WORKDIR /src
 ADD --checksum=sha256:91eb08b2924e92303a12ca7848be4c01d62b3ec701895bbd2caf5507d07b6c15 https://codeload.github.com/cloudflare/cloudflared/tar.gz/002a5ccaf75a4e612bfa451063c1d82a2d13336b /source.tar.gz
@@ -32,7 +32,7 @@ FROM builder AS tunnel-tests
 # Upstream ICMP tests need a namespaced ping_group_range; set it only on docker run.
 CMD ["go", "test", "-mod=readonly", "-count=1", "./config", "./ingress", "./cmd/cloudflared/cliutil", "./validation"]
 
-FROM gcr.io/distroless/static-debian13:nonroot@sha256:516757106de35205efb70b91ba03f6f1298424a0678c603255cf2852a7000087 AS tunnel
+FROM gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99 AS tunnel
 LABEL org.opencontainers.image.source="https://github.com/cloudflare/cloudflared" \
       org.opencontainers.image.revision="002a5ccaf75a4e612bfa451063c1d82a2d13336b" \
       org.opencontainers.image.version="2026.10.2-operix.1" \

@@ -40,7 +40,7 @@ export function ProjectList({ session, query }) {
         description={t('projects.subtitle')}
         actions={
           can(session, 'projects.create') && (
-            <a className="px-btn px-btn-primary" href="#/projects/new">
+            <a className="px-btn px-btn-primary" href="/projects/new">
               <Plus aria-hidden="true" /> {t('dashboard.newProject')}
             </a>
           )
@@ -65,7 +65,7 @@ export function ProjectList({ session, query }) {
             <>
               <RecordTable
                 caption={t('projects.title')}
-                href={(row) => `#/projects/${row.id}`}
+                href={(row) => `/projects/${row.id}`}
                 rows={data.data}
                 columns={[
                   { key: 'name', label: t('common.name'), render: (r) => <><b>{r.name}</b><small className="px-cell-sub">{r.number}</small></> },
@@ -172,7 +172,7 @@ export function ProjectEditor({ session, id, query = {} }) {
   return (
     <>
       <PageHeader
-        eyebrow={<a href="#/projects">{t('projects.title')}</a>}
+        eyebrow={<a href="/projects">{t('projects.title')}</a>}
         title={id ? t('projects.editTitle', { number: existing.data.number }) : t('dashboard.newProject')}
       />
       <form className="px-card px-form" onSubmit={submit}>
@@ -263,7 +263,7 @@ export function ProjectEditor({ session, id, query = {} }) {
         </Field>
         {error && <FormError>{error}</FormError>}
         <div className="px-actions">
-          <a className="px-btn px-btn-secondary" href={id ? `#/projects/${id}` : '#/projects'}>
+          <a className="px-btn px-btn-secondary" href={id ? `/projects/${id}` : '/projects'}>
             {t('common.cancel')}
           </a>
           <button className="px-btn px-btn-primary" disabled={busy}>
@@ -300,13 +300,13 @@ export function ProjectDetail({ id, session }) {
         return (
           <>
             <PageHeader
-              eyebrow={<a href="#/projects">{t('projects.title')}</a>}
+              eyebrow={<a href="/projects">{t('projects.title')}</a>}
               title={`${p.number} · ${p.name}`}
               description={<StatusBadge module="projects" status={p.status} data={p.data} />}
               actions={
                 <>
                   {editable && (
-                    <a className="px-btn px-btn-secondary" href={`#/projects/${p.id}/edit`}>
+                    <a className="px-btn px-btn-secondary" href={`/projects/${p.id}/edit`}>
                       <Pencil aria-hidden="true" /> {t('common.edit')}
                     </a>
                   )}
@@ -328,8 +328,8 @@ export function ProjectDetail({ id, session }) {
                 <h2>{t('projects.details')}</h2>
                 <DefinitionList
                   items={[
-                    [t('common.customer'), p.data.customerId ? (p.related.records[p.data.customerId] ? <a href={`#/customers/${p.data.customerId}`}>{p.related.records[p.data.customerId].name}</a> : t('common.restricted')) : t('projects.internal')],
-                    [t('projects.quotation'), p.data.quotationId && (p.related.records[p.data.quotationId] ? <a href={`#/quotations/${p.data.quotationId}`}>{p.related.records[p.data.quotationId].number}</a> : t('common.restricted'))],
+                    [t('common.customer'), p.data.customerId ? (p.related.records[p.data.customerId] ? <a href={`/customers/${p.data.customerId}`}>{p.related.records[p.data.customerId].name}</a> : t('common.restricted')) : t('projects.internal')],
+                    [t('projects.quotation'), p.data.quotationId && (p.related.records[p.data.quotationId] ? <a href={`/quotations/${p.data.quotationId}`}>{p.related.records[p.data.quotationId].number}</a> : t('common.restricted'))],
                     [t('common.branch'), branchName(session, p.branchId)],
                     [t('projects.manager'), p.related.people[p.data.projectManagerUserId]],
                     [t('projects.members'), (p.data.memberUserIds ?? []).map((u) => p.related.people[u]).filter(Boolean).join(', ')],

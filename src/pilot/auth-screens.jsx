@@ -27,7 +27,7 @@ function AuthLayout({ title, subtitle, children }) {
   return (
     <div className="px-auth">
       <header className="px-auth-top">
-        <a className="px-auth-home" href="#/">
+        <a className="px-auth-home" href="/">
           <ArrowLeft aria-hidden="true" /> {t('auth.home')}
         </a>
         <LanguageSwitch />
@@ -69,7 +69,7 @@ export function SignIn({ notice }) {
         ...(form.organizationSlug ? { organizationSlug: form.organizationSlug } : {}),
       });
       session.set(result);
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       if (err.code === 'MFA_REQUIRED') setStep('mfa');
       else if (err.code === 'WORKSPACE_SELECTION_REQUIRED') {
@@ -128,7 +128,7 @@ export function SignIn({ notice }) {
             {t('auth.back')}
           </button>
         )}
-        <a className="px-link" href="#/forgot-password">
+        <a className="px-link" href="/forgot-password">
           {t('auth.forgot')}
         </a>
       </form>
@@ -169,7 +169,7 @@ export function ForgotPassword() {
           </button>
         </form>
       )}
-      <a className="px-link" href="#/login">
+      <a className="px-link" href="/login">
         {t('auth.backToSignIn')}
       </a>
     </AuthLayout>
