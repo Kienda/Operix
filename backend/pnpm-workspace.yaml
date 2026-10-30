@@ -25,7 +25,8 @@ onlyBuiltDependencies:
 overrides:
   proxy-addr: 2.0.8
   qs: 6.16.0
-  multer: 2.4.0
+  multer: 2.5.0
+  'body-parser@>=2 <2.4.0': 2.4.0
   'js-yaml@>=4 <5': 4.3.2
   'js-yaml@>=5 <6': 5.4.2
   'fast-uri@>=3 <4': 3.1.8

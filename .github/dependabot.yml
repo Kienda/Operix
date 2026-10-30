@@ -6,3 +6,10 @@ updates:
   - package-ecosystem: docker
     directory: /deploy/docker
     schedule: {interval: weekly}
+    # support.Dockerfile is bound by checksum to deploy/support-images.lock.json and
+    # its storage contract (postgres 16-alpine-uid70, redis 7.4-aof). Its bases are
+    # updated by hand with a new lock review, never by automated PRs.
+    ignore:
+      - dependency-name: postgres
+      - dependency-name: redis
+      - dependency-name: golang

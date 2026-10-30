@@ -1,5 +1,14 @@
 import { z } from 'zod';
-import { countryCode, currencyCode, email, mediumText, shortText, timeZone, uuid } from './common';
+import {
+  countryCode,
+  currencyCode,
+  email,
+  mediumText,
+  shortText,
+  timeZone,
+  uuid,
+  patchSchema,
+} from './common';
 import { password } from './auth';
 
 export const subscriptionPlanSchema = z.object({
@@ -33,11 +42,12 @@ export const subscriptionPlanSchema = z.object({
       advancedAudit: z.boolean().default(false),
       dataMigration: z.boolean().default(false),
     })
-    .default({}),
+    // Zod 4 returns .default() values unparsed; prefault fills the nested defaults.
+    .prefault({}),
   isPublic: z.boolean().default(true),
   isActive: z.boolean().default(true),
 });
-export const updateSubscriptionPlanSchema = subscriptionPlanSchema.partial();
+export const updateSubscriptionPlanSchema = patchSchema(subscriptionPlanSchema);
 
 /** Platform Super Admin creating a tenant, including its first owner. */
 export const createOrganizationSchema = z.object({
@@ -95,7 +105,7 @@ export const assignSubscriptionSchema = z.object({
   negotiatedPrice: z.string().optional(),
   currency: currencyCode.optional(),
   /** Per-tenant overrides on top of the plan's limits. */
-  limitOverrides: z.record(z.coerce.number().int().min(0)).default({}),
+  limitOverrides: z.record(z.string(), z.coerce.number().int().min(0)).default({}),
   moduleOverrides: z.array(z.string().trim().max(40)).default([]),
   notes: mediumText.optional(),
 });

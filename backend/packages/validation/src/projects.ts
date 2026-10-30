@@ -9,6 +9,7 @@ import {
   shortText,
   tagsSchema,
   uuid,
+  patchSchema,
 } from './common';
 import { CONTRACT_REQUIREMENTS } from './contracts';
 
@@ -59,7 +60,7 @@ export const projectSchema = z.object({
   tags: tagsSchema,
   notes: longText.optional(),
 });
-export const updateProjectSchema = projectSchema.partial();
+export const updateProjectSchema = patchSchema(projectSchema);
 
 export const projectStatusSchema = z.object({
   status: z.enum(PROJECT_STATUSES),
@@ -108,7 +109,7 @@ export const taskSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).default(0),
   tags: tagsSchema,
 });
-export const updateTaskSchema = taskSchema.partial();
+export const updateTaskSchema = patchSchema(taskSchema);
 
 export const taskCommentSchema = z.object({
   body: longText.min(1),
@@ -196,7 +197,7 @@ export const workOrderSchema = z.object({
   deliveryAddress: mediumText.optional(),
   tags: tagsSchema,
 });
-export const updateWorkOrderSchema = workOrderSchema.partial();
+export const updateWorkOrderSchema = patchSchema(workOrderSchema);
 
 export const workOrderStatusSchema = z.object({
   status: z.enum(WORK_ORDER_STATUSES),

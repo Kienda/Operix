@@ -22,7 +22,7 @@ def main():
     image = args.image
     info = json.loads(docker("image", "inspect", image))[0]
     assert info["Config"]["User"] == "65532:65532"
-    assert "2026.10.2-operix.1" in docker("run", "--rm", "--network", "none", image, "--version")
+    assert "2026.10.2-operix.2" in docker("run", "--rm", "--network", "none", image, "--version")
     with tempfile.TemporaryDirectory(prefix="operix-tunnel-check-") as temp:
         root = Path(temp)
         # These fixtures contain no secrets; the non-root image must traverse the bind mount.

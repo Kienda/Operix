@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { longText, mediumText, positiveAmount, shortText, tagsSchema, uuid } from './common';
+import {
+  longText,
+  mediumText,
+  positiveAmount,
+  shortText,
+  tagsSchema,
+  uuid,
+  patchSchema,
+} from './common';
 
 export const CONTRACT_REQUIREMENTS = [
   'not_required',
@@ -63,7 +71,7 @@ export const contractTemplateSchema = z.object({
   renewalNoticeDays: z.coerce.number().int().min(0).max(365).default(30),
   isActive: z.boolean().default(true),
 });
-export const updateContractTemplateSchema = contractTemplateSchema.partial();
+export const updateContractTemplateSchema = patchSchema(contractTemplateSchema);
 
 export const contractSchema = z.object({
   templateId: uuid.nullish(),
@@ -73,7 +81,9 @@ export const contractSchema = z.object({
   quotationId: uuid.nullish(),
   title: shortText,
   /** Values for the template merge fields. */
-  fieldValues: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).default({}),
+  fieldValues: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .default({}),
   amount: positiveAmount.optional(),
   currency: z.string().trim().length(3).optional(),
   startDate: z.coerce.date().nullish(),
@@ -85,7 +95,7 @@ export const contractSchema = z.object({
   notes: longText.optional(),
   tags: tagsSchema,
 });
-export const updateContractSchema = contractSchema.partial().omit({ customerId: true });
+export const updateContractSchema = patchSchema(contractSchema).omit({ customerId: true });
 
 export const contractApprovalSchema = z.object({
   approved: z.boolean(),

@@ -39,6 +39,17 @@ Prisma stays on major 6. Both client and migration CLI are pinned to the same ve
 
 Other overrides retain existing majors and correct vulnerable transitive pins. They should be reviewed when parent packages update. Root React/Vite manifests need no changes; the frontend audit is already clear. PostgreSQL/Prisma, React/Vite, NestJS and BullMQ architecture is preserved.
 
+## 2026-10-30 follow-up
+
+Three new high advisories failed the backend gate on main (bf7dc4d). No severity threshold or ignore list was changed.
+
+| Dependency | Advisory | Previous | Reviewed version |
+| --- | --- | --- | --- |
+| multer (Nest platform-express) | GHSA-q7qp-rjg7-q26m | 2.4.0 override | 2.5.0 override |
+| body-parser (Express 5) | GHSA-27r3-jxmh-p828 | 2.3.0 | 2.4.0 override, scoped to `>=2 <2.4.0` |
+| zod (config, validation, API manifest) | GHSA-mrhx-c7xc-m3w5 | 3.25.76 | 4.6.7 |
+
+Zod has no patched 3.x release, so this is a deliberate major upgrade. Only environment parsing (`@operix/config`) and the shared `@operix/validation` schemas use Zod; the API validates requests with class-validator. Zod 4 changes handled: `z.record` takes an explicit key schema; `.default({})` on an object is no longer parsed, so plan features use `.prefault({})`; and `.partial()` now applies field defaults, so every update schema uses `patchSchema()`, which keeps the Zod 3 rule that omitted fields stay omitted. `zod-semantics.spec.ts` pins these behaviours.
 ## Validation
 
 Validated on Node 24.18.0 / pnpm 11.1.3, using the current working tree:

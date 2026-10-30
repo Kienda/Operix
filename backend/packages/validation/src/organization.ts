@@ -10,6 +10,7 @@ import {
   shortText,
   timeZone,
   uuid,
+  patchSchema,
 } from './common';
 
 /**
@@ -86,11 +87,11 @@ export const organizationProfileSchema = z.object({
   secondaryPhone: phone.nullish(),
   email: email.nullish(),
   website: z.string().trim().url().max(255).nullish(),
-  socialLinks: z.record(z.string().url()).default({}),
+  socialLinks: z.record(z.string(), z.string().url()).default({}),
   address: addressSchema.optional(),
 });
 
-export const updateOrganizationSchema = organizationProfileSchema.partial();
+export const updateOrganizationSchema = patchSchema(organizationProfileSchema);
 
 export const branchSchema = z.object({
   name: shortText,
@@ -123,7 +124,7 @@ export const branchSchema = z.object({
     .default([]),
   isActive: z.boolean().default(true),
 });
-export const updateBranchSchema = branchSchema.partial();
+export const updateBranchSchema = patchSchema(branchSchema);
 
 export const inviteUserSchema = z.object({
   email,
@@ -156,7 +157,7 @@ export const roleSchema = z.object({
   dataScope: z.enum(['all', 'branch', 'assigned', 'self']).default('branch'),
   permissions: z.array(z.string().trim().min(1).max(80)).max(500).default([]),
 });
-export const updateRoleSchema = roleSchema.partial();
+export const updateRoleSchema = patchSchema(roleSchema);
 
 export const permissionOverrideSchema = z.object({
   userId: uuid,

@@ -8,6 +8,7 @@ import {
   shortText,
   tagsSchema,
   uuid,
+  patchSchema,
 } from './common';
 
 export const UNITS = [
@@ -59,7 +60,7 @@ export const inventoryItemSchema = z.object({
   isActive: z.boolean().default(true),
   tags: tagsSchema,
 });
-export const updateInventoryItemSchema = inventoryItemSchema.partial();
+export const updateInventoryItemSchema = patchSchema(inventoryItemSchema);
 
 export const inventoryLocationSchema = z.object({
   branchId: uuid,
@@ -250,7 +251,7 @@ export const supplierSchema = z.object({
   isActive: z.boolean().default(true),
   tags: tagsSchema,
 });
-export const updateSupplierSchema = supplierSchema.partial();
+export const updateSupplierSchema = patchSchema(supplierSchema);
 
 export const purchaseRequestSchema = z.object({
   branchId: uuid.nullish(),
@@ -344,7 +345,7 @@ export const assetSchema = z.object({
   notes: longText.optional(),
   tags: tagsSchema,
 });
-export const updateAssetSchema = assetSchema.partial();
+export const updateAssetSchema = patchSchema(assetSchema);
 
 export const assetAssignmentSchema = z.object({
   employeeId: uuid.nullish(),
