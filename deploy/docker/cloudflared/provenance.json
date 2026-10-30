@@ -5,21 +5,34 @@
   "commit": "002a5ccaf75a4e612bfa451063c1d82a2d13336b",
   "tag_signature": "not signed; verified against official HTTPS origin and release tag",
   "archive_sha256": "91eb08b2924e92303a12ca7848be4c01d62b3ec701895bbd2caf5507d07b6c15",
-  "dependency_patch": {
-    "module": "github.com/klauspost/compress",
-    "from": "v1.18.0",
-    "to": "v1.18.7",
-    "sum_lines": [
-      "github.com/klauspost/compress v1.18.7 h1:aUyZsS4kH3QTKurYhAOwAHxllVPnOthb3vPfnF1Ehjw=",
-      "github.com/klauspost/compress v1.18.7/go.mod h1:cwPg85FWrGar70rWktvGQj8/hthj3wpl0PGDogxkrSQ="
-    ]
-  },
+  "dependency_patches": [
+    {
+      "module": "github.com/klauspost/compress",
+      "from": "v1.18.0",
+      "to": "v1.18.7",
+      "advisory": "CVE-2026-63209",
+      "sum_lines": [
+        "github.com/klauspost/compress v1.18.7 h1:aUyZsS4kH3QTKurYhAOwAHxllVPnOthb3vPfnF1Ehjw=",
+        "github.com/klauspost/compress v1.18.7/go.mod h1:cwPg85FWrGar70rWktvGQj8/hthj3wpl0PGDogxkrSQ="
+      ]
+    },
+    {
+      "module": "github.com/go-jose/go-jose/v4",
+      "from": "v4.1.4",
+      "to": "v4.1.6",
+      "advisory": "CVE-2026-116587 (GHSA-mgcc-cww5-fp2q)",
+      "sum_lines": [
+        "github.com/go-jose/go-jose/v4 v4.1.6 h1:sNRkftxFJxwsILiQukqp5z83QBSmntVwmgRY7AqBDO4=",
+        "github.com/go-jose/go-jose/v4 v4.1.6/go.mod h1:x4oUasVrzR7071A4TnHLGSPpNOm2a21K9Kf04k1rs08="
+      ]
+    }
+  ],
   "lock_sha256": {
-    "go.mod": "74e60b9fb5f5eee36403f63006c8c3ffccb7c9b64b3a6c11204fa065fbed615c",
-    "go.sum": "a5242f186e8de26d20926ad158d09384f3a0b6162c8c7e9177287b65aa5753db"
+    "go.mod": "65e6fc3ffed7cb81a04fb17fa779c9ef73825053c6d449203c6d672d48388075",
+    "go.sum": "ee937722292693e41e4e0ced4d470e7dc67b6783262d417469bef73eb819fadc"
   },
   "toolchain": "go1.27.3",
-  "version": "2026.10.2-operix.1",
+  "version": "2026.10.2-operix.2",
   "platforms": [
     "linux/amd64",
     "linux/arm64"

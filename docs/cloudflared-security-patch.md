@@ -1,9 +1,10 @@
 # Temporary internally built cloudflared
 
-Operix temporarily builds `2026.10.2-operix.1` from official Cloudflare source because
+Operix temporarily builds `2026.10.2-operix.2` from official Cloudflare source because
 the official 2026.10.1 and 2026.10.2 binaries embed `github.com/klauspost/compress`
-v1.18.0 and fail the HIGH/CRITICAL image gate for CVE-2026-63209. This is an internally
-built connector, not an official Cloudflare release or a fork of cloudflared.
+v1.18.0 (CVE-2026-63209) and `github.com/go-jose/go-jose/v4` v4.1.4 (CVE-2026-116587,
+published 2026-10-27), both of which fail the HIGH/CRITICAL image gate. This is an
+internally built connector, not an official Cloudflare release or a fork of cloudflared.
 
 ## Provenance and dependency scope
 
@@ -15,22 +16,24 @@ built connector, not an official Cloudflare release or a fork of cloudflared.
 - The tag is unsigned. Verification uses the official HTTPS Git origin, matching
   release/tag/commit identity and the recorded archive hash; it is not a signature
   attestation by Cloudflare. Builds fetch the commit archive with `ADD --checksum`.
-- Only `compress` changes: v1.18.0 to v1.18.7, with its two checksum entries added.
+- Only two modules change, each with its two checksum entries added: `compress`
+  v1.18.0 to v1.18.7 (`operix.1`), and `go-jose/v4` v4.1.4 to v4.1.6 (`operix.2`,
+  the version upstream master now requires; it adds no dependencies).
   All other requirements, replacements and selected module versions remain upstream.
   The Docker build checks both lockfile differences and the complete selected module
   graph, failing on any additional change. Historical upstream go.sum entries are
   retained; they do not imply that an older version is linked into the binary.
 - Reviewed locks and module checksums: `deploy/docker/cloudflared/`. Downloads use
   `proxy.golang.org` with `sum.golang.org` verification; `go mod verify` must pass.
-  The final binary's Go build metadata must report compress v1.18.7.
+  The final binary's Go build metadata must report compress v1.18.7 and go-jose v4.1.6.
 
 Pinned build inputs are in `deploy/docker/tunnel.Dockerfile`:
 
 | Input | Immutable index digest |
 | --- | --- |
 | Dockerfile frontend 1.7 | `sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e` |
-| Official Go 1.27.3 bookworm | `sha256:5c3e9b43cfd3bb95c7937462e29d87ada57b481a96fa23ad0eb61778d7a00110` |
-| Distroless static Debian 13 nonroot | `sha256:516757106de35205efb70b91ba03f6f1298424a0678c603255cf2852a7000087` |
+| Official Go 1.27.3 bookworm | `sha256:972b4110ba0f47539a975c31e52c64765e1ff19f2d74469ae4a595c6676e80a5` |
+| Distroless static Debian 13 nonroot | `sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99` |
 
 Go toolchain auto-download is disabled. The build uses CGO=0, readonly modules,
 trimmed source paths, no VCS injection, an empty linker build ID and a fixed source
@@ -78,6 +81,11 @@ Repeat with `--no-cache-filter builder` and compare the manifest digest in the O
 index. Ordinary CI release builds retain their default BuildKit provenance behavior;
 their registry digest may differ from the normalized local artifact.
 
+The `operix.2` go-jose patch was checked against the upstream archive with the same
+lockfile comparisons the Dockerfile runs, and a Trivy HIGH/CRITICAL scan of the patched
+module set reports no findings; the image build, Go suites and image scan run in CI.
+The record below is for `operix.1`.
+
 Local validation passed for all five release image builds and scans: each has zero
 HIGH/CRITICAL findings with Trivy 0.61.1, and the tunnel's Go binary was scanned.
 CVE-2026-63209 is absent. The normalized linux/amd64 OCI manifest is
@@ -103,8 +111,8 @@ remain commit/run/attempt-specific. IAM, CloudFormation and staging switches are
 
 When Cloudflare publishes a patched official image:
 
-1. Verify its official tag, immutable digest and embedded compress version (at least
-   v1.18.7); do not infer remediation solely from the release number.
+1. Verify its official tag, immutable digest and embedded compress and go-jose versions
+   (at least v1.18.7 and v4.1.6); do not infer remediation solely from the release number.
 2. Restore the official binary-copy source stage with a digest-pinned image, retaining
    a pinned non-root runtime and certificate trust. Remove the internal Go build/locks,
    internal version label and source-build-only tests in the same reviewed change.
