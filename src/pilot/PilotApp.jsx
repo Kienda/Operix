@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import {
   BriefcaseBusiness,
   FileText,
@@ -15,7 +15,9 @@ import { auth, session as store } from './api.js';
 import { navigate, useRoute, migrateLegacyLinks } from './router.js';
 import { onLanguage, t } from './i18n.js';
 import { ToastProvider } from './ui.jsx';
-import { AcceptInvite, Brand, ForgotPassword, LanguageSwitch, ResetPassword, SignIn } from './auth-screens.jsx';
+import { AcceptInvite, ForgotPassword, LanguageSwitch, ResetPassword, SignIn } from './auth-screens.jsx';
+import { Brand } from './brand.jsx';
+import Landing from './landing.jsx';
 import Dashboard from './screens/dashboard.jsx';
 import { CustomerDetail, CustomerList } from './screens/customers.jsx';
 import { QuotationDetail, QuotationEditor, QuotationList } from './screens/quotations.jsx';
@@ -23,7 +25,6 @@ import { ProjectDetail, ProjectEditor, ProjectList } from './screens/projects.js
 import TaskList from './screens/tasks.jsx';
 import Team from './screens/team.jsx';
 import Account from './screens/account.jsx';
-const Landing = lazy(() => import('../public/Landing.jsx'));
 
 migrateLegacyLinks();
 
@@ -85,8 +86,10 @@ function Router() {
   const [first] = route.segments;
   if (first === 'accept-invite') return <AcceptInvite token={route.query.token} />;
   if (first === 'reset-password') return <ResetPassword token={route.query.token} />;
-  if (!first) return <Landing onLogin={(event) => { event?.preventDefault(); navigate('/login'); }} />;
   if (!current?.accessToken) {
+    // Public landing only at the bare root; every other route (including deep
+    // links to app screens) asks to sign in.
+    if (!first) return <Landing />;
     if (first === 'forgot-password') return <ForgotPassword />;
     if (first !== 'login') return <LoginRedirect />;
     const notice = { reset: t('auth.resetDone'), invited: t('auth.inviteDone') }[route.query.notice];
@@ -95,7 +98,7 @@ function Router() {
   if (!verified)
     return (
       <div className="px-boot" role="status">
-        <Brand />
+        <Brand light />
         <span>{t('common.verifyingSession')}</span>
       </div>
     );

@@ -252,7 +252,7 @@ test('public landing, canonical login, unknown account and protected routes', as
 }) => {
   await page.goto(env.web);
   await expect(page.getByRole('heading', { level: 1, name: /Manage everything/ })).toBeVisible();
-  await page.getByRole('link', { name: 'Login', exact: true }).click();
+  await page.getByRole('link', { name: 'Login', exact: true }).first().click();
   await expect(page).toHaveURL(`${env.web}/login`);
   await expect(page.getByRole('heading', { name: 'Sign in to Operix' })).toBeVisible();
   await page.getByLabel('Work email').fill(`unknown-${randomUUID()}@browser.test`);
@@ -293,14 +293,13 @@ for (const [name, width, height] of [
     await page.setViewportSize({ width, height });
     await page.goto(env.web);
     await expect(page.getByRole('heading', { level: 1, name: /Manage everything/ })).toBeVisible();
-    if (name === 'mobile') await page.getByRole('button', { name: 'Toggle navigation' }).click();
-    await expect(page.getByRole('link', { name: 'Login', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Login', exact: true }).first()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       width,
     );
     mkdirSync('e2e/evidence/activation', { recursive: true });
     await page.screenshot({ path: `e2e/evidence/activation/${name}-landing.png` });
-    await page.getByRole('link', { name: 'Login', exact: true }).click();
+    await page.getByRole('link', { name: 'Login', exact: true }).first().click();
     await expect(page).toHaveURL(`${env.web}/login`);
     await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
     expect(await page.getByRole('link', { name: /register|sign up/i }).count()).toBe(0);
