@@ -47,6 +47,8 @@ export const en = {
   'nav.team': 'Team & access',
   'nav.account': 'My account',
   'nav.workspace': 'Workspace',
+  'nav.activeRole': 'Active role',
+  'team.assignedRoles': 'Assigned roles',
   'nav.signOut': 'Sign out',
   'nav.pilot': 'Pilot',
 

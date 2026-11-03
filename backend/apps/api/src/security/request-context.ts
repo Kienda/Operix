@@ -1,6 +1,7 @@
 import type { Request } from 'express';
 import type { DataScope, ModuleKey } from '@operix/permissions';
 export interface AuthContext {
+  activeRoleId?: string | null;
   userId: string;
   organizationId: string;
   sessionId: string;

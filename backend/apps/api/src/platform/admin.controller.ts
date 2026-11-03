@@ -14,6 +14,8 @@ import {
 } from '@nestjs/common';
 import {
   ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
   IsArray,
   IsEmail,
   IsIn,
@@ -71,6 +73,7 @@ class InviteUserDto {
   @IsOptional() @IsArray() @ArrayMaxSize(50) @IsUUID('4', { each: true }) branchIds?: string[];
 }
 class MembershipDto {
+  @IsOptional() @IsArray() @ArrayMinSize(1) @ArrayMaxSize(20) @ArrayUnique() @IsUUID('4', { each: true }) roleIds?: string[];
   @IsOptional() @IsUUID() roleId?: string;
   @IsOptional() @IsArray() @ArrayMaxSize(50) @IsUUID('4', { each: true }) branchIds?: string[];
 }
@@ -162,7 +165,7 @@ export class AdminController {
   @RequirePermissions('users.manage') @Get('users') async users(@Req() r: AuthenticatedRequest) {
     const members = await this.db.organizationUser.findMany({
       where: membershipWhere(r.auth),
-      include: { user: { select: userSelect }, role: true },
+      include: { user: { select: userSelect }, role: true, assignedRoles: { include: { role: true } } },
       orderBy: { createdAt: 'asc' },
     });
     return members.map((m) => ({
@@ -173,6 +176,7 @@ export class AdminController {
       createdAt: m.createdAt,
       suspendedAt: m.suspendedAt,
       user: m.user,
+      roles: [...new Map([m.role, ...m.assignedRoles.map((g) => g.role)].filter((r) => r !== null).map((r) => [r!.id, { id: r!.id, name: r!.name, key: r!.systemKey, dataScope: r!.dataScope }])).values()],
       role: m.role
         ? { id: m.role.id, name: m.role.name, key: m.role.systemKey, dataScope: m.role.dataScope }
         : null,
@@ -240,29 +244,33 @@ export class AdminController {
     @Body() body: MembershipDto,
     @Req() r: AuthenticatedRequest,
   ) {
-    if (!body.roleId && !body.branchIds) throw new BadRequestException('Nothing to change');
+    if (!body.roleId && !body.roleIds && !body.branchIds) throw new BadRequestException('Nothing to change');
+    if (body.roleId && body.roleIds) throw new BadRequestException('Use roleIds or roleId');
     return serializable(this.db, async (tx) => {
       const member = await this.member(tx, r.auth, membershipId);
-      const roleId = body.roleId ?? member.roleId;
-      const role = roleId
-        ? await tx.role.findFirst({ where: { id: roleId, organizationId: r.auth.organizationId } })
-        : null;
-      if (!role) throw new BadRequestException('Role does not belong to this organization');
+      const grants = await tx.membershipRole.findMany({
+        where: { membershipId: member.id, organizationId: r.auth.organizationId }, include: { role: true },
+      });
+      const current = [...new Map([member.role, ...grants.map((g) => g.role)].filter((x) => x !== null).map((x) => [x!.id, x!])).values()];
+      const roleIds = body.roleIds ?? (body.roleId ? [body.roleId] : current.map((x) => x.id));
+      const roles = await tx.role.findMany({ where: { organizationId: r.auth.organizationId, id: { in: roleIds } } });
+      if (!roleIds.length || roles.length !== roleIds.length) throw new BadRequestException('Invalid assigned roles');
       const branchIds = [...new Set(body.branchIds ?? member.branchIds)];
-      // Both the current and the new access must be within the caller's authority.
-      if (member.role) await assertDelegable(tx, r.auth, member.role, member.branchIds);
-      await assertDelegable(tx, r.auth, role, branchIds);
-      if (member.isOwner && !(role.systemKey && OWNER_ROLE_KEYS.has(role.systemKey)))
+      for (const role of current) await assertDelegable(tx, r.auth, role, member.branchIds);
+      for (const role of roles) await assertDelegable(tx, r.auth, role, branchIds);
+      if (member.isOwner && !roles.some((x) => x.systemKey && OWNER_ROLE_KEYS.has(x.systemKey)))
         throw new BadRequestException('Transfer ownership before changing an owner role');
-      const updated = await tx.organizationUser.update({
-        where: { id: member.id },
-        data: { roleId: role.id, branchIds },
-      });
+      const roleId = member.roleId && roleIds.includes(member.roleId) ? member.roleId : roleIds[0];
+      await tx.membershipRole.deleteMany({ where: { membershipId: member.id } });
+      await tx.membershipRole.createMany({ data: roleIds.map((id) => ({ organizationId: r.auth.organizationId, membershipId: member.id, roleId: id })) });
+      const updated = await tx.organizationUser.update({ where: { id: member.id }, data: { roleId, branchIds } });
+      // Immediately invalidate removed selections across all devices; next request uses the valid default.
+      await tx.session.updateMany({ where: { userId: member.userId, organizationId: r.auth.organizationId,
+        activeRoleId: { notIn: roleIds } }, data: { activeRoleId: null } });
       await this.audit(tx, r.auth, 'MEMBERSHIP_UPDATED', 'membership', member.id, {
-        before: { roleId: member.roleId, branchIds: member.branchIds },
-        after: { roleId: role.id, branchIds },
+        before: { roleId: member.roleId, roleIds: current.map((x) => x.id), branchIds: member.branchIds }, after: { roleId, roleIds, branchIds },
       });
-      return { id: updated.id, roleId: updated.roleId, branchIds: updated.branchIds };
+      return { id: updated.id, roleId, roleIds, branchIds };
     });
   }
 
@@ -273,7 +281,9 @@ export class AdminController {
     return serializable(this.db, async (tx) => {
       const member = await this.member(tx, r.auth, membershipId);
       if (member.isOwner) throw new BadRequestException('An owner cannot be suspended');
-      if (member.role) await assertDelegable(tx, r.auth, member.role, member.branchIds);
+      const grants = await tx.membershipRole.findMany({ where: { membershipId: member.id, organizationId: r.auth.organizationId }, include: { role: true } });
+      for (const role of [member.role, ...grants.map((g) => g.role)].filter((x) => x !== null))
+        await assertDelegable(tx, r.auth, role!, member.branchIds);
       if (member.status === 'SUSPENDED') return { id: member.id, status: member.status };
       const updated = await tx.organizationUser.update({
         where: { id: member.id },
@@ -297,7 +307,9 @@ export class AdminController {
   ) {
     return serializable(this.db, async (tx) => {
       const member = await this.member(tx, r.auth, membershipId);
-      if (member.role) await assertDelegable(tx, r.auth, member.role, member.branchIds);
+      const grants = await tx.membershipRole.findMany({ where: { membershipId: member.id, organizationId: r.auth.organizationId }, include: { role: true } });
+      for (const role of [member.role, ...grants.map((g) => g.role)].filter((x) => x !== null))
+        await assertDelegable(tx, r.auth, role!, member.branchIds);
       if (member.status === 'ACTIVE') return { id: member.id, status: member.status };
       const updated = await tx.organizationUser.update({
         where: { id: member.id },

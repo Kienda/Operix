@@ -118,6 +118,18 @@ function DashboardRedirect() {
 
 function Shell({ session, route }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const [roleError, setRoleError] = useState('');
+  const switchRole = async (roleId) => {
+    setSwitching(true);
+    setRoleError('');
+    try {
+      const profile = await auth.switchRole(roleId);
+      store.set({ ...store.get(), ...profile });
+      navigate('/dashboard', { replace: true });
+    } catch (err) { setRoleError(err.message); }
+    finally { setSwitching(false); }
+  };
   const nav = useMemo(() => NAV.filter((item) => !item.permission || can(session, item.permission)), [session.permissions]);
   const [first, second] = route.segments;
   const mfaGate = session.mfaEnrollmentRequired;
@@ -234,10 +246,24 @@ function Shell({ session, route }) {
             <Brand />
           </div>
           <span className="px-pilot-tag">{t('nav.pilot')}</span>
+          <details className="px-role-menu">
+            <summary>{session.user.firstName} {session.user.lastName} / {session.role?.name}</summary>
+            <div className="px-role-panel">
+            <b>{session.user.firstName} {session.user.lastName}</b>
+            <label>{t('nav.activeRole')}
+              <select aria-label={t('nav.activeRole')} value={session.role?.id ?? ''} disabled={switching}
+                onChange={(e) => switchRole(e.target.value)}>
+                {(session.roles ?? [session.role].filter(Boolean)).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            </label>
+            <p>{t('team.branches')}: {session.branchIds?.length ? session.branches?.map((b) => b.name).join(', ') : t('team.allBranches')}</p>
+            {roleError && <p role="alert">{roleError}</p>}
+            </div>
+          </details>
           <LanguageSwitch />
         </header>
         <main id="px-main" tabIndex={-1} className="px-content">
-          {screen}
+          <React.Fragment key={session.role?.id}>{screen}</React.Fragment>
         </main>
       </div>
     </div>

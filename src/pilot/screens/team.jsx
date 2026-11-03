@@ -115,18 +115,17 @@ function InviteDialog({ session, roles, onClose, onDone }) {
 
 function AccessDialog({ session, member, roles, onClose, onDone }) {
   const toast = useToast();
-  const [roleId, setRoleId] = useState(member.role?.id ?? '');
+  const [roleIds, setRoleIds] = useState((member.roles ?? [member.role].filter(Boolean)).map((r) => r.id));
   const [branchIds, setBranchIds] = useState(member.branchIds);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const role = roles.find((r) => r.id === roleId);
-  const allowAll = orgWide(session) && role?.dataScope !== 'branch';
+  const allowAll = orgWide(session) && !roles.some((r) => roleIds.includes(r.id) && r.dataScope === 'branch');
   const submit = async (event) => {
     event.preventDefault();
     setBusy(true);
     setError('');
     try {
-      await organization.updateMember(member.id, { roleId, branchIds });
+      await organization.updateMember(member.id, { roleIds, branchIds });
       toast(t('team.accessUpdated', { name: `${member.user.firstName} ${member.user.lastName}` }));
       onDone();
       onClose();
@@ -138,14 +137,20 @@ function AccessDialog({ session, member, roles, onClose, onDone }) {
   return (
     <Dialog title={t('team.changeAccess', { name: `${member.user.firstName} ${member.user.lastName}` })} onClose={onClose}>
       <form className="px-form" onSubmit={submit}>
-        <RoleSelect roles={roles.some((r) => r.id === member.role?.id) ? roles : [...roles, member.role].filter(Boolean)} value={roleId} onChange={setRoleId} />
+        <fieldset className="px-checks">
+          <legend>{t('team.assignedRoles')}</legend>
+          {[...new Map([...roles, ...(member.roles ?? [member.role].filter(Boolean))].map((r) => [r.id, r])).values()].map((r) => (
+            <label key={r.id}><input type="checkbox" checked={roleIds.includes(r.id)}
+              onChange={() => setRoleIds(roleIds.includes(r.id) ? roleIds.filter((id) => id !== r.id) : [...roleIds, r.id])} />{r.name}</label>
+          ))}
+        </fieldset>
         <BranchChoices session={session} value={branchIds} onChange={setBranchIds} allowAll={allowAll} />
         {error && <FormError>{error}</FormError>}
         <div className="px-actions">
           <button type="button" className="px-btn px-btn-secondary" onClick={onClose}>
             {t('common.cancel')}
           </button>
-          <button className="px-btn px-btn-primary" disabled={busy}>
+          <button className="px-btn px-btn-primary" disabled={busy || !roleIds.length}>
             {t('common.save')}
           </button>
         </div>
@@ -204,7 +209,7 @@ export default function Team({ session }) {
                           <b>{m.user.firstName} {m.user.lastName}</b>
                           <small className="px-cell-sub">{m.user.email}</small>
                         </td>
-                        <td data-label={t('team.role')}>{m.role?.name ?? t('common.noRole')}{m.isOwner ? ` · ${t('team.owner')}` : ''}</td>
+                        <td data-label={t('team.role')}>{(m.roles ?? [m.role].filter(Boolean)).map((r) => r.name).join(', ') || t('common.noRole')}{m.isOwner ? ` · ${t('team.owner')}` : ''}</td>
                         <td data-label={t('team.branches')}>{branchLabel(m.branchIds)}</td>
                         <td data-label={t('team.mfa')}>
                           {m.user.mfaEnabled ? (

@@ -232,6 +232,7 @@ model OrganizationUser {
   organizationId String @db.Uuid
   userId String @db.Uuid
   roleId String? @db.Uuid
+  assignedRoles MembershipRole[]
   customerId String? @db.Uuid
   employeeId String? @db.Uuid
   branchIds String[] @default([])
@@ -248,6 +249,7 @@ model OrganizationUser {
   customer BusinessRecord? @relation("CustomerMembership", fields: [organizationId, customerId], references: [organizationId, id], onDelete: Restrict)
   employee BusinessRecord? @relation("EmployeeMembership", fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
   @@unique([organizationId, userId])
+  @@unique([organizationId, id])
   @@index([userId])
 }
 
@@ -265,6 +267,7 @@ model Role {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   memberships OrganizationUser[]
   invitations Invitation[]
+  assignments MembershipRole[]
   @@unique([organizationId, name])
   @@unique([organizationId, id])
 }
@@ -274,6 +277,7 @@ model Session {
   userId String @db.Uuid
   organizationId String? @db.Uuid
   refreshTokenHash String
+  activeRoleId String? @db.Uuid
   deviceName String?
   ipAddress String?
   userAgent String?
@@ -460,4 +464,15 @@ model AuditLog {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
   @@index([organizationId, resource, createdAt])
   @@index([userId, createdAt])
+}
+
+/// Tenant-composite foreign keys prevent cross-tenant role grants.
+model MembershipRole {
+  organizationId String @db.Uuid
+  membershipId String @db.Uuid
+  roleId String @db.Uuid
+  membership OrganizationUser @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Cascade)
+  role Role @relation(fields: [organizationId, roleId], references: [organizationId, id], onDelete: Restrict)
+  @@id([membershipId, roleId])
+  @@index([organizationId, roleId])
 }

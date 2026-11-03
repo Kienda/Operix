@@ -47,6 +47,16 @@ export async function resolveAuthorization(
   sessionId: string,
   facts: MfaFacts = { mfaEnabled: true, organizationSettings: {} },
 ): Promise<AuthContext> {
+  // Server session selects exactly one role; grants are rechecked on every request.
+  const session = await db.session.findUnique({ where: { id: sessionId } });
+  if (session?.activeRoleId && session.activeRoleId !== membership.roleId) {
+    const grant = await db.membershipRole.findFirst({
+      where: { membershipId: membership.id, organizationId: membership.organizationId, roleId: session.activeRoleId },
+      include: { role: true },
+    });
+    if (!grant) throw new ForbiddenException('Active role has been revoked; select an assigned role');
+    membership = { ...membership, roleId: grant.roleId, role: grant.role };
+  }
   if (membership.role && membership.role.organizationId !== membership.organizationId)
     throw new ForbiddenException('Invalid membership role');
   if (membership.status !== 'ACTIVE')
@@ -104,6 +114,7 @@ export async function resolveAuthorization(
     employeeId: membership.employeeId,
   });
   return {
+    activeRoleId: membership.roleId,
     userId: membership.userId,
     organizationId: membership.organizationId,
     sessionId,
@@ -114,7 +125,7 @@ export async function resolveAuthorization(
     customerId: membership.customerId,
     employeeId: membership.employeeId,
     roleKey: membership.role?.systemKey ?? null,
-    isOwner: membership.isOwner,
+    isOwner: membership.isOwner && ['company_owner', 'ght_owner'].includes(membership.role?.systemKey ?? ''),
     mfaEnrollmentRequired:
       !facts.mfaEnabled &&
       !!membership.role?.systemKey &&

@@ -117,6 +117,7 @@ const post = (path, body) => api(path, { method: 'POST', body: body ?? {} });
 export const auth = {
   login: (body) => api('/auth/login', { method: 'POST', body }),
   me: () => api('/auth/me'),
+  switchRole: (roleId) => post('/auth/switch-role', { roleId }),
   logout: () => post('/auth/logout'),
   forgot: (email) => post('/auth/forgot-password', { email }),
   reset: (token, password) => post('/auth/reset-password', { token, password }),

@@ -211,11 +211,52 @@ export class AuthService {
     return { success: true };
   }
 
+  async switchRole(ctx: AuthContext, roleId: string) {
+    await serializable(this.db, async (tx) => {
+      const member = await tx.organizationUser.findUniqueOrThrow({
+        where: { organizationId_userId: { organizationId: ctx.organizationId, userId: ctx.userId } },
+        include: { user: true, organization: true, role: true },
+      });
+      const grant = roleId === member.roleId || await tx.membershipRole.findFirst({
+        where: { organizationId: ctx.organizationId, membershipId: member.id, roleId },
+      });
+      if (member.status !== 'ACTIVE' || !grant) throw new ForbiddenException('Role is not assigned');
+      const session = await tx.session.findFirst({ where: {
+        id: ctx.sessionId, userId: ctx.userId, organizationId: ctx.organizationId,
+        revokedAt: null, expiresAt: { gt: new Date() },
+      } });
+      if (!session) throw new UnauthorizedException('Session is no longer active');
+      await tx.session.update({ where: { id: session.id }, data: { activeRoleId: roleId } });
+      await resolveAuthorization(tx, member, session.id, {
+        mfaEnabled: member.user.mfaEnabled, organizationSettings: member.organization.settings,
+      });
+      await tx.auditLog.create({ data: {
+        organizationId: ctx.organizationId, userId: ctx.userId, action: 'ROLE_SWITCHED',
+        resource: 'session', resourceId: session.id,
+        before: { roleId: session.activeRoleId ?? member.roleId }, after: { roleId },
+      } });
+    });
+    const member = await this.db.organizationUser.findUniqueOrThrow({
+      where: { organizationId_userId: { organizationId: ctx.organizationId, userId: ctx.userId } },
+      include: { role: true, user: true, organization: true },
+    });
+    const principal = await resolveAuthorization(this.db, member, ctx.sessionId, {
+      mfaEnabled: member.user.mfaEnabled, organizationSettings: member.organization.settings,
+    });
+    return this.me(principal);
+  }
+
   async me(ctx: AuthContext) {
     const membership = await this.db.organizationUser.findUniqueOrThrow({
       where: { organizationId_userId: { organizationId: ctx.organizationId, userId: ctx.userId } },
       include: { user: true, role: true, organization: true },
     });
+    const grants = await this.db.membershipRole.findMany({
+      where: { membershipId: membership.id, organizationId: ctx.organizationId }, include: { role: true },
+    });
+    const roles = [...new Map([membership.role, ...grants.map((g) => g.role)]
+      .filter((r) => r !== null).map((r) => [r!.id, r!])).values()];
+    const active = roles.find((r) => r.id === (ctx.activeRoleId ?? membership.roleId)) ?? null;
     const branches = await this.db.branch.findMany({
       where: {
         organizationId: ctx.organizationId,
@@ -225,7 +266,8 @@ export class AuthService {
       select: { id: true, name: true, code: true, country: true, currency: true, timezone: true },
       orderBy: { name: 'asc' },
     });
-    return { ...this.profile(membership.user, membership, ctx), branches };
+    return { ...this.profile(membership.user, { ...membership, role: active }, ctx),
+      roles: roles.map((r) => ({ id: r.id, name: r.name, key: r.systemKey })), branches };
   }
 
   // --------------------------------------------------------------------- MFA

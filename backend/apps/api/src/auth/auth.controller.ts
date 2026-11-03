@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Headers, Post, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsUUID, IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import type { Request } from 'express';
 import { AccountSecurity, Public } from '../security/public.decorator';
 import { RateLimit } from '../security/rate-limit';
@@ -17,6 +17,9 @@ class LoginDto {
   @IsString()
   @Matches(/^\d{6}$/, { message: 'mfaCode must be 6 digits' })
   mfaCode?: string;
+}
+class SwitchRoleDto {
+  @IsUUID() roleId!: string;
 }
 class RefreshDto {
   @IsString() @MaxLength(200) refreshToken!: string;
@@ -63,6 +66,9 @@ export class AuthController {
   }
   @AccountSecurity() @Post('logout') logout(@Req() req: AuthenticatedRequest) {
     return this.auth.logout(req.auth);
+  }
+  @AccountSecurity() @Post('switch-role') switchRole(@Body() body: SwitchRoleDto, @Req() req: AuthenticatedRequest) {
+    return this.auth.switchRole(req.auth, body.roleId);
   }
   @AccountSecurity() @Get('me') me(@Req() req: AuthenticatedRequest) {
     return this.auth.me(req.auth);

@@ -47,6 +47,8 @@ export const fr = {
   'nav.team': 'Équipe et accès',
   'nav.account': 'Mon compte',
   'nav.workspace': 'Espace de travail',
+  'nav.activeRole': 'R\u00f4le actif',
+  'team.assignedRoles': 'R\u00f4les attribu\u00e9s',
   'nav.signOut': 'Se déconnecter',
   'nav.pilot': 'Pilote',
 
